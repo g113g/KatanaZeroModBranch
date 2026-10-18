@@ -6,7 +6,9 @@ No profit is made from this mod. If requested, I will respectfully take it down.
 # Katana ZERO Weapons
 Terraria mod that aims to add all 7 katanas from Katana ZERO into Terraria as their own weapons.
 
-Current mod status: Mostly finalized, unless I get the spark to resume
+Current mod status: That's unofficial branch by mod contributor, in testing and in discussion with original creator.
+
+P.S. I hate that only sensible idea for Multiplayer will be toggle turning off all slow-down mechanics.
 
 [Steam Workshop Link](https://steamcommunity.com/sharedfiles/filedetails/?id=3289273898)
 
@@ -43,6 +45,18 @@ Current mod status: Mostly finalized, unless I get the spark to resume
 - TBD...
 
 # Changelog
+## **v1.4.0**
+**Bug Fixes**
+- 🛠️ Fixed multihit for complex enemies (worms, golem, enemies with parts) by **Dragon Dash character**.
+- 🛠️ All Swords can hit only one enemy per hit like in original game, same for deflection, with exceptions like Claymore and Dragon Dash.
+**Changes**
+- 🔧 Now **Dragon Dash when using Dragon's Whisper** looks fancy, have limit to Chronos slow motion via battery UI.
+- 🔧 Deflection resets standart attack cooldown like in original game.
+- 🔧 Character now can move in slow-mo state.
+- 🔧 Added effects. Deflection spark, Kill effects, Dragon Dash effect, slow-mo trail while charecter moves.
+- 🔧 Added visual red line cooldown for Dragon Dash and attacks from original game.
+
+
 ## **v1.3.0**
 **Bug Fixes**
 - 🛠️ Fixed logic with **Dragon Dash character** staying in place.
