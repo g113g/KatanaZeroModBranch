@@ -23,6 +23,7 @@ namespace KatanaZERO
         public static bool enableVectorKnockback = false;
         public static bool toggleDrop = true;
         public static bool progressionDamage = false;
+        public static bool enableKatanaZeroFont = true;
 
         public static string zeroKatanaSound;
         public static string prismSwordSound;
@@ -96,6 +97,93 @@ namespace KatanaZERO
             phoenixEdgeSound = config.PhoenixEdgeSound;
             fifteensKatanaSound = config.FifteensBladeSound;
             dashTrailStyle = config.DashTrailStyle;
+            enableKatanaZeroFont = config.CustomFont;
+        }
+
+        public static int GetRootEntityId(NPC npc)
+        {
+            if (npc == null || !npc.active)
+                return -1;
+
+            // 1. Explicit vanilla/modded realLife link (The Destroyer, Wyverns, Calamity worms, etc.)
+            if (npc.realLife >= 0 && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].active)
+            {
+                return npc.realLife;
+            }
+
+            // 2. Worm AI (AI Style 6) or Eater of Worlds segments: follow ai[0] link to find head
+            if (npc.aiStyle == NPCAIStyleID.Worm || npc.type == NPCID.EaterofWorldsHead || npc.type == NPCID.EaterofWorldsBody || npc.type == NPCID.EaterofWorldsTail)
+            {
+                int current = npc.whoAmI;
+                int safety = 0;
+                while (safety++ < 100)
+                {
+                    NPC currNpc = Main.npc[current];
+                    int parent = (int)currNpc.ai[0];
+                    if (parent >= 0 && parent < Main.maxNPCs && parent != current && Main.npc[parent].active)
+                    {
+                        if (Main.npc[parent].aiStyle == NPCAIStyleID.Worm 
+                            || Main.npc[parent].type == NPCID.EaterofWorldsHead 
+                            || Main.npc[parent].type == NPCID.EaterofWorldsBody 
+                            || Main.npc[parent].type == npc.type)
+                        {
+                            current = parent;
+                            continue;
+                        }
+                    }
+                    break;
+                }
+                return current;
+            }
+
+            // 3. Known multipart vanilla bosses:
+            // Golem: Head (246), Fists (247, 248) -> Body (245)
+            if (npc.type == NPCID.GolemHead || npc.type == NPCID.GolemFistLeft || npc.type == NPCID.GolemFistRight)
+            {
+                for (int i = 0; i < Main.maxNPCs; i++)
+                {
+                    if (Main.npc[i].active && Main.npc[i].type == NPCID.Golem)
+                        return i;
+                }
+            }
+
+            // Moon Lord: Hands (397), Head (396), Free Eyes (400) -> Core (398)
+            if (npc.type == NPCID.MoonLordHead || npc.type == NPCID.MoonLordHand || npc.type == NPCID.MoonLordFreeEye)
+            {
+                for (int i = 0; i < Main.maxNPCs; i++)
+                {
+                    if (Main.npc[i].active && Main.npc[i].type == NPCID.MoonLordCore)
+                        return i;
+                }
+            }
+
+            // Skeletron & Skeletron Prime: hands/arms link to head via ai[1]
+            if (npc.type == NPCID.SkeletronHand || npc.type == NPCID.PrimeCannon || npc.type == NPCID.PrimeSaw || npc.type == NPCID.PrimeVice || npc.type == NPCID.PrimeLaser)
+            {
+                int head = (int)npc.ai[1];
+                if (head >= 0 && head < Main.maxNPCs && Main.npc[head].active)
+                    return head;
+            }
+
+            // Brain of Cthulhu Creepers link via ai[0]
+            if (npc.type == NPCID.Creeper)
+            {
+                int brain = (int)npc.ai[0];
+                if (brain >= 0 && brain < Main.maxNPCs && Main.npc[brain].active)
+                    return brain;
+            }
+
+            // Wall of Flesh Eyes & Hungries
+            if (npc.type == NPCID.WallofFleshEye || npc.type == NPCID.TheHungry || npc.type == NPCID.TheHungryII)
+            {
+                for (int i = 0; i < Main.maxNPCs; i++)
+                {
+                    if (Main.npc[i].active && Main.npc[i].type == NPCID.WallofFlesh)
+                        return i;
+                }
+            }
+
+            return npc.whoAmI;
         }
     }
 
@@ -137,14 +225,86 @@ namespace KatanaZERO
             float intensity = KatanaPlayer.LocalSlowMoIntensity;
             if (intensity > 0.01f && npc.active && !npc.friendly && !npc.townNPC && !npc.isLikeATownNPC && !NPCID.Sets.CountsAsCritter[npc.type] && (npc.damage > 0 || npc.lifeMax > 5))
             {
-                // R2. Stylized deep navy/cyan body colors during Chronos time-slow
-                Color navyTint = new Color(20, 65, 120, drawColor.A);
-                drawColor = Color.Lerp(drawColor, navyTint, intensity * 0.85f);
+                // Dynamic Katana Zero Chronos enemy palette
+                // Hostile enemies are perceived with fullbright illumination, completely immune to pitch-black nighttime/cave darkness.
+                Player player = Main.LocalPlayer;
+                float dist = Vector2.Distance(npc.Center, player.Center);
+                bool inDashRange = dist <= 464f;
+
+                // Calculate aim proximity if player is aiming
+                float aimProximity = 0f;
+                Vector2 toMouse = Main.MouseWorld - player.Center;
+                float mouseDist = toMouse.Length();
+                if (mouseDist > 1f)
+                {
+                    Vector2 aimDir = toMouse / mouseDist;
+                    Vector2 segStart = player.Center;
+                    Vector2 segEnd = player.Center + aimDir * Math.Min(464f, Math.Max(50f, mouseDist));
+                    Vector2 seg = segEnd - segStart;
+                    float segLenSq = seg.LengthSquared();
+                    float t = segLenSq > 0f ? Math.Clamp(Vector2.Dot(npc.Center - segStart, seg) / segLenSq, 0f, 1f) : 0f;
+                    Vector2 closestPoint = segStart + seg * t;
+                    float distToAim = Vector2.Distance(npc.Center, closestPoint);
+                    aimProximity = Math.Clamp(1f - distToAim / 100f, 0f, 1f);
+                }
+
+                Color targetBody;
+                if (inDashRange)
+                {
+                    // Alerted / targeted state (matching Katana Zero combat state):
+                    // Bright vibrant electric cyan/teal with luminous cyan-white highlights when aimed at!
+                    Color baseCyan = new Color(175, 245, 255);
+                    Color highlightCyan = new Color(255, 255, 255);
+                    targetBody = Color.Lerp(baseCyan, highlightCyan, aimProximity * 0.75f);
+                }
+                else
+                {
+                    // Distant / unalerted state (matching Katana Zero patrol state):
+                    // Stylized vibrant Katana Zero violet/indigo
+                    targetBody = new Color(215, 185, 255);
+                }
+
+                byte alpha = (byte)Math.Clamp(255 - npc.alpha, 0, 255);
+                targetBody.A = alpha;
+
+                // Full replacement at peak slowmo intensity so enemies are vividly lit at night and day alike
+                drawColor = Color.Lerp(drawColor, targetBody, intensity * 1.0f);
             }
         }
 
-        public static (Vector2 drawPos, Vector2 origin, Rectangle sourceRect, SpriteEffects effects) GetNPCDrawInfo(NPC npc, Texture2D texture, Vector2 screenPos)
+        public static (Texture2D texture, Vector2 drawPos, Vector2 origin, Rectangle sourceRect, SpriteEffects effects)? GetNPCDrawInfo(NPC npc, Vector2 screenPos)
         {
+            // Moon Lord's background composite parts (Head, Hand, Core) are positioned and drawn by vanilla's screen-space system.
+            // Skipping manual outline pass on Moon Lord prevents duplicate floating parts while preserving the full Katana Zero stylized indigo body via DrawEffects.
+            if (npc.type == NPCID.MoonLordCore || npc.type == NPCID.MoonLordHead || npc.type == NPCID.MoonLordHand)
+            {
+                return null;
+            }
+
+            Texture2D texture;
+            if (npc.type == NPCID.Golem)
+            {
+                texture = Terraria.GameContent.TextureAssets.Golem[3].Value;
+            }
+            else if (npc.type == NPCID.GolemHead)
+            {
+                texture = Terraria.GameContent.TextureAssets.Golem[0].Value;
+            }
+            else if (npc.type == NPCID.GolemFistLeft || npc.type == NPCID.GolemFistRight)
+            {
+                texture = Terraria.GameContent.TextureAssets.Golem[1].Value;
+            }
+            else
+            {
+                Main.instance.LoadNPC(npc.type);
+                if (!Terraria.GameContent.TextureAssets.Npc[npc.type].IsLoaded)
+                    return null;
+                texture = Terraria.GameContent.TextureAssets.Npc[npc.type].Value;
+            }
+
+            if (texture == null)
+                return null;
+
             if (npc.type == NPCID.Deerclops)
             {
                 int frameX = npc.frame.Y / 5;
@@ -153,7 +313,22 @@ namespace KatanaZERO
                 Vector2 origin = sourceRect.Size() * new Vector2(0.5f, 1f) - new Vector2(0f, 4f);
                 Vector2 drawPos = npc.Bottom - screenPos;
                 SpriteEffects effects = npc.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
-                return (drawPos, origin, sourceRect, effects);
+                return (texture, drawPos, origin, sourceRect, effects);
+            }
+            else if (npc.type == NPCID.QueenSlimeBoss)
+            {
+                int frameCount = Math.Max(1, Main.npcFrameCount[npc.type]);
+                int frameHeight = Math.Max(1, npc.frame.Height);
+                int frameIndex = npc.frame.Y / frameHeight;
+                int frameX = frameIndex / frameCount;
+                int frameY = frameIndex % frameCount;
+                if (frameX < 0 || frameX > 1) frameX = 0;
+                Rectangle sourceRect = Terraria.Utils.Frame(texture, 2, frameCount, frameX, frameY, 0, 0);
+                sourceRect.Inflate(0, -2);
+                Vector2 origin = sourceRect.Size() * new Vector2(0.5f, 1f);
+                Vector2 drawPos = npc.Bottom - screenPos + new Vector2(0f, 2f);
+                SpriteEffects effects = npc.spriteDirection == 1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+                return (texture, drawPos, origin, sourceRect, effects);
             }
             else
             {
@@ -165,17 +340,14 @@ namespace KatanaZERO
                 }
 
                 Vector2 halfSize = sourceRect.Size() / 2f;
-                int frameCount = Math.Max(1, Main.npcFrameCount[npc.type]);
-                Vector2 frameDimensions = new Vector2(texture.Width, (float)texture.Height / frameCount);
-
                 Vector2 drawPos = new Vector2(
-                    npc.position.X - screenPos.X + (npc.width / 2f) - (frameDimensions.X * npc.scale / 2f) + (halfSize.X * npc.scale),
-                    npc.position.Y - screenPos.Y + npc.height - (frameDimensions.Y * npc.scale) + (halfSize.Y * npc.scale) + npc.gfxOffY
+                    npc.Center.X - screenPos.X,
+                    npc.Bottom.Y - screenPos.Y - (sourceRect.Height * npc.scale / 2f) + npc.gfxOffY
                 );
 
                 Vector2 origin = halfSize;
                 SpriteEffects effects = npc.spriteDirection == 1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-                return (drawPos, origin, sourceRect, effects);
+                return (texture, drawPos, origin, sourceRect, effects);
             }
         }
 
@@ -184,30 +356,84 @@ namespace KatanaZERO
             float intensity = KatanaPlayer.LocalSlowMoIntensity;
             if (intensity > 0.01f && npc.active && !npc.friendly && !npc.townNPC && !npc.isLikeATownNPC && !NPCID.Sets.CountsAsCritter[npc.type] && (npc.damage > 0 || npc.lifeMax > 5))
             {
-                Main.instance.LoadNPC(npc.type);
-                if (!Terraria.GameContent.TextureAssets.Npc[npc.type].IsLoaded)
-                    return true;
-
-                Texture2D texture = Terraria.GameContent.TextureAssets.Npc[npc.type].Value;
-                if (texture == null)
-                    return true;
-
-                float alphaFactor = Math.Max(0f, (255f - npc.alpha) / 255f);
-                float strokeSize = Math.Clamp(Math.Max(npc.width, npc.height) / 32f, 2.5f, 6.5f);
-                Color outlineColor = new Color(60, 40, 245, 250) * (intensity * alphaFactor);
-
-                var (drawPos, origin, sourceRect, effects) = GetNPCDrawInfo(npc, texture, screenPos);
-
-                int sampleCount = 12;
-                for (int s = 0; s < sampleCount; s++)
+                var drawInfo = GetNPCDrawInfo(npc, screenPos);
+                if (drawInfo.HasValue)
                 {
-                    float angle = MathHelper.TwoPi / sampleCount * s;
-                    Vector2 offset = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * strokeSize;
+                    var (texture, drawPos, origin, sourceRect, effects) = drawInfo.Value;
+
+                    float alphaFactor = Math.Max(0f, (255f - npc.alpha) / 255f);
+                    float strokeSize = Math.Clamp(Math.Max(npc.width, npc.height) / 20f, 3.5f, 9.5f);
+
+                    Player player = Main.LocalPlayer;
+                    float dist = Vector2.Distance(npc.Center, player.Center);
+                    bool inDashRange = dist <= 464f;
+
+                    // Dynamic Katana Zero outline: Neon Electric Cyan when alerted/in-range, Neon Violet when distant
+                    Color outlineColor = inDashRange
+                        ? new Color(0, 245, 255, 245) * (intensity * alphaFactor)
+                        : new Color(140, 60, 255, 235) * (intensity * alphaFactor);
+
+                    int sampleCount = 16;
+                    for (int s = 0; s < sampleCount; s++)
+                    {
+                        float angle = MathHelper.TwoPi / sampleCount * s;
+                        Vector2 offset = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * strokeSize;
+                        spriteBatch.Draw(
+                            texture,
+                            drawPos + offset,
+                            sourceRect,
+                            outlineColor,
+                            npc.rotation,
+                            origin,
+                            npc.scale,
+                            effects,
+                            0f
+                        );
+                    }
+                }
+            }
+            return true; // Allow Terraria to draw the stylized fullbright body on top of the outline
+        }
+
+        public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+        {
+            float intensity = KatanaPlayer.LocalSlowMoIntensity;
+            if (intensity > 0.01f && npc.active && !npc.friendly && !npc.townNPC && !npc.isLikeATownNPC && !NPCID.Sets.CountsAsCritter[npc.type] && (npc.damage > 0 || npc.lifeMax > 5))
+            {
+                var drawInfo = GetNPCDrawInfo(npc, screenPos);
+                if (drawInfo.HasValue)
+                {
+                    var (texture, drawPos, origin, sourceRect, effects) = drawInfo.Value;
+                    float alphaFactor = Math.Max(0f, (255f - npc.alpha) / 255f);
+
+                    Player player = Main.LocalPlayer;
+                    float dist = Vector2.Distance(npc.Center, player.Center);
+                    bool inDashRange = dist <= 464f;
+
+                    // 1. High-intensity additive neon wash
+                    Color bodyGlow = inDashRange
+                        ? new Color(0, 230, 255, 0) * (intensity * alphaFactor * 0.95f)
+                        : new Color(180, 100, 255, 0) * (intensity * alphaFactor * 0.90f);
+
                     spriteBatch.Draw(
                         texture,
-                        drawPos + offset,
+                        drawPos,
                         sourceRect,
-                        outlineColor,
+                        bodyGlow,
+                        npc.rotation,
+                        origin,
+                        npc.scale,
+                        effects,
+                        0f
+                    );
+
+                    // 2. Pure additive white sheen (lifts all pitch-black pixels into luminous brightness)
+                    Color whiteSheen = new Color(255, 255, 255, 0) * (intensity * alphaFactor * 0.40f);
+                    spriteBatch.Draw(
+                        texture,
+                        drawPos,
+                        sourceRect,
+                        whiteSheen,
                         npc.rotation,
                         origin,
                         npc.scale,
@@ -216,7 +442,72 @@ namespace KatanaZERO
                     );
                 }
             }
-            return true; // Allow Terraria to draw the muted body on top of the outline
+        }
+
+        public static Dictionary<int, float> LastKatanaHitAngle = new Dictionary<int, float>();
+
+        public override void OnHitByItem(NPC npc, Player player, Item item, NPC.HitInfo hit, int damageDone)
+        {
+            var kp = player.GetModPlayer<KatanaPlayer>();
+            if (kp.IsHoldingAnyKatana || item.ModItem is FifteensBlade)
+            {
+                LastKatanaHitAngle[npc.whoAmI] = (npc.Center - player.Center).ToRotation();
+            }
+        }
+
+        public override void OnHitByProjectile(NPC npc, Projectile projectile, NPC.HitInfo hit, int damageDone)
+        {
+            if (projectile.friendly && projectile.owner >= 0 && projectile.owner < Main.maxPlayers)
+            {
+                Player player = Main.player[projectile.owner];
+                if (player.active)
+                {
+                    var kp = player.GetModPlayer<KatanaPlayer>();
+                    if (kp.IsHoldingAnyKatana || kp.IsHoldingFifteen || kp.IsSlowingTime || projectile.DamageType == DamageClass.Melee)
+                    {
+                        LastKatanaHitAngle[npc.whoAmI] = projectile.velocity != Vector2.Zero
+                            ? projectile.velocity.ToRotation()
+                            : (npc.Center - player.Center).ToRotation();
+                    }
+                }
+            }
+        }
+
+        public override void OnKill(NPC npc)
+        {
+            if (npc.friendly || npc.townNPC || npc.isLikeATownNPC || NPCID.Sets.CountsAsCritter[npc.type])
+                return;
+
+            if (npc.lastInteraction >= 0 && npc.lastInteraction < Main.maxPlayers)
+            {
+                Player player = Main.player[npc.lastInteraction];
+                if (player.active)
+                {
+                    var katanaPlayer = player.GetModPlayer<KatanaPlayer>();
+                    // If player is currently executing Dragon Dash, DragonDash handles the single dash kill line
+                    if (katanaPlayer.IsDragonDashing)
+                    {
+                        LastKatanaHitAngle.Remove(npc.whoAmI);
+                        return;
+                    }
+
+                    if (katanaPlayer.IsSlowingTime || katanaPlayer.IsHoldingAnyKatana || katanaPlayer.IsHoldingFifteen)
+                    {
+                        float angle = 0f;
+                        if (LastKatanaHitAngle.TryGetValue(npc.whoAmI, out float recordedAngle))
+                        {
+                            angle = recordedAngle;
+                        }
+                        else
+                        {
+                            angle = (npc.Center - player.Center).ToRotation();
+                        }
+
+                        katanaPlayer.SpawnScreenCut(npc.Center, angle);
+                    }
+                }
+            }
+            LastKatanaHitAngle.Remove(npc.whoAmI);
         }
     }
 

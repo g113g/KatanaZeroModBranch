@@ -15,8 +15,30 @@ namespace KatanaZERO.Systems
             MaxInstances = 2
         };
 
-        public static void Deflect(Projectile slash, Projectile bullet, int damageMultiplier)
+        public static bool Deflect(Projectile slash, Projectile bullet, int damageMultiplier)
         {
+            if (!KatanaGlobalProjectile.CanDeflect(slash))
+                return false;
+
+            if (slash.TryGetGlobalProjectile<KatanaGlobalProjectile>(out var glob))
+            {
+                glob.HasDeflectedAnyProjectile = true;
+            }
+
+            // In Katana Zero, deflecting consumes the swing's attack capability against enemies
+            slash.friendly = false;
+
+            // Deflection immediately resets attack animation and weapon cooldown, allowing instant parry spamming
+            Player player = Main.player[slash.owner];
+            player.itemAnimation = 0;
+            player.itemTime = 0;
+            player.reuseDelay = 0;
+
+            if (player.HeldItem?.ModItem is IKatanaWeapon kw)
+            {
+                kw.ResetAttackCooldown();
+            }
+
             bullet.hostile = false;
             bullet.friendly = true;
             bullet.owner = slash.owner;
@@ -66,6 +88,7 @@ namespace KatanaZERO.Systems
 
             // Audio sync with Katana Zero's deflection sound
             SoundEngine.PlaySound(DeflectSound, contactPoint);
+            return true;
         }
     }
 }

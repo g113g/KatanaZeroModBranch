@@ -13,7 +13,7 @@ using static Terraria.ModLoader.ModLoader;
 
 namespace KatanaZERO.Items.FifteensBlade
 {
-    public class FifteensBlade : ModItem
+    public class FifteensBlade : ModItem, IKatanaWeapon
     {
         //Please forgive me
         public static SoundStyle GetSlashSound(string swordName, int slashNumber)
@@ -57,6 +57,7 @@ namespace KatanaZERO.Items.FifteensBlade
         public static readonly SoundStyle SlowDisengage = new SoundStyle("KatanaZERO/Sounds/slomo_disengage");
 
         public float attackCooldown = 0f;
+        public void ResetAttackCooldown() => attackCooldown = 0f;
         public float dragonCooldown = 0f;
 
         public int SlowMoCounter = 0;
@@ -299,15 +300,21 @@ namespace KatanaZERO.Items.FifteensBlade
             int hitboxHeight = player.height * 3;
 
             Vector2 dashStep = (directionToCursor * (dashSpeed / 60f));
+            Vector2 dashStartCenter = player.Center;
 
             Dictionary<int, bool> hitEnemies = new Dictionary<int, bool>();
             List<Vector2> dashTrailPositions = new List<Vector2>();
 
-            // Collect trajectory positions for authentic character ghost trail
+            // Collect trajectory positions for dense, continuous character motion blur smear
             dashTrailPositions.Add(player.position);
 
             float accumulatedDistance = 0f;
-            float trailStepDistance = 18f;
+            float trailStepDistance = 2.5f; // Ultra-dense spacing (2.5px step) so ghosts seamlessly blur into a continuous motion sheet
+
+            katanaPlayer.IsDragonDashing = true;
+            bool anyKilledDuringDash = false;
+            Vector2 killOriginSum = Vector2.Zero;
+            int killCount = 0;
 
             for (float i = 0; i < dashTicks; i++)
             {
@@ -338,31 +345,87 @@ namespace KatanaZERO.Items.FifteensBlade
                 {
                     if (!enemy.friendly && enemy.Hitbox.Intersects(playerHitbox) && enemy.netID != 549)
                     {
-                        if (!hitEnemies.ContainsKey(enemy.whoAmI))
-                        {
-                            hitEnemies[enemy.whoAmI] = true;
+                        // Universal multipart entity check: resolves all segments of worms (Eater of Worlds, Destroyer, Wyvern, etc.)
+                        // and multipart bosses (Golem, Moon Lord, Skeletron, WoF, etc.) to the exact same root ID.
+                        // Ensures multipart entities take damage EXACTLY ONCE per dash!
+                        int rootEntityId = KatanaZERO.GetRootEntityId(enemy);
 
-                            if (!enemy.boss)
-                            {
-                                enemy.SimpleStrikeNPC(Item.damage * 5, 0, false, 0, DamageClass.Melee, true, 0, false);
-                            }
-                            else
-                            {
-                                double FivePercentDamage = enemy.lifeMax * 0.025;
-                                enemy.SimpleStrikeNPC((Item.damage * 5) + (int)FivePercentDamage, 0, true, 0, DamageClass.Melee, false, 0, false);
-                            }
+                        if (hitEnemies.ContainsKey(rootEntityId) || hitEnemies.ContainsKey(enemy.whoAmI))
+                        {
+                            continue;
+                        }
+
+                        hitEnemies[rootEntityId] = true;
+                        hitEnemies[enemy.whoAmI] = true;
+
+                        int prevLife = enemy.life;
+                        if (!enemy.boss)
+                        {
+                            enemy.SimpleStrikeNPC(Item.damage * 5, 0, false, 0, DamageClass.Melee, true, 0, false);
+                        }
+                        else
+                        {
+                            double FivePercentDamage = enemy.lifeMax * 0.025;
+                            enemy.SimpleStrikeNPC((Item.damage * 5) + (int)FivePercentDamage, 0, true, 0, DamageClass.Melee, false, 0, false);
+                        }
+
+                        // Register dying enemy for standing glitch ghost
+                        if (!enemy.active || enemy.life <= 0 || (prevLife > 0 && enemy.life <= 0))
+                        {
+                            anyKilledDuringDash = true;
+                            killOriginSum += enemy.Center;
+                            killCount++;
+                            katanaPlayer.SpawnDyingEnemyGlitch(enemy);
                         }
                     }
                 }
             }
 
-            if (dashTrailPositions.Count == 0 || Vector2.Distance(dashTrailPositions[^1], player.position) > 20f)
+            katanaPlayer.IsDragonDashing = false;
+
+            // Katana Zero rule: exactly ONE single kill line along the dash vector for all enemies killed by the dash!
+            if (anyKilledDuringDash && killCount > 0)
+            {
+                Vector2 avgKillOrigin = killOriginSum / killCount;
+                katanaPlayer.SpawnScreenCut(avgKillOrigin, directionToCursor.ToRotation());
+            }
+
+            if (dashTrailPositions.Count == 0 || Vector2.Distance(dashTrailPositions[^1], player.position) > 10f)
             {
                 dashTrailPositions.Add(player.position);
             }
 
-            // R1. Spawn authentic character ghost silhouettes with cyan and magenta chromatic separation
+            Vector2 dashEndCenter = player.Center;
+
+            // Spawn Katana Zero continuous chromatic motion blur beam (single line laser-blur connecting start and end)
+            katanaPlayer.SpawnDashStreak(dashStartCenter, dashEndCenter, directionToCursor);
+
+            // Spawn dense overlapping character ghost silhouettes with lime and magenta chromatic edge blur
             katanaPlayer.SpawnGhostTrails(dashTrailPositions, directionToCursor);
+
+            // Spawn authentic Katana Zero crescent slash arc at dash destination
+            // Only hits enemies slightly outside the dash reach; enemies already struck during the dash are excluded!
+            if (player.whoAmI == Main.myPlayer)
+            {
+                int slashProj = Projectile.NewProjectile(
+                    player.GetSource_ItemUse(Item),
+                    player.Center,
+                    directionToCursor * 0.05f,
+                    ModContent.ProjectileType<FifteensSlash>(),
+                    Item.damage * 4,
+                    Item.knockBack,
+                    player.whoAmI
+                );
+
+                if (slashProj >= 0 && slashProj < Main.maxProjectiles)
+                {
+                    var gp = Main.projectile[slashProj].GetGlobalProjectile<KatanaGlobalProjectile>();
+                    foreach (var id in hitEnemies.Keys)
+                    {
+                        gp.HitRootEntityIds.Add(id);
+                    }
+                }
+            }
 
             Random random = new Random();
             int randomNumber = random.Next(1, 3);

@@ -64,11 +64,14 @@ namespace KatanaZERO.Items.Claymore
                 }
             }
 
-            foreach (Projectile p in Main.projectile) //deflect projectiles in contact with the hitbox
+            if (Systems.KatanaGlobalProjectile.CanDeflect(Projectile))
             {
-                if (p.active && p.hostile && p.getRect().Intersects(Projectile.getRect()))
+                foreach (Projectile p in Main.projectile) //deflect projectiles in contact with the hitbox
                 {
-                    Systems.DeflectionHelper.Deflect(Projectile, p, 8);
+                    if (p.active && p.hostile && p.getRect().Intersects(Projectile.getRect()))
+                    {
+                        Systems.DeflectionHelper.Deflect(Projectile, p, 8);
+                    }
                 }
             }
         }

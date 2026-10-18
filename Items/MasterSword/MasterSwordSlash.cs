@@ -64,16 +64,18 @@ namespace KatanaZERO.Items.MasterSword
                 }
             }
 
-            if (bulletDeflectionAmount > 0) //check how many bullets you can deflect (infinite for claymore prototype)
+            if (bulletDeflectionAmount > 0 && Systems.KatanaGlobalProjectile.CanDeflect(Projectile)) //check how many bullets you can deflect (infinite for claymore prototype)
             {
                 foreach (Projectile p in Main.projectile) //deflect projectiles in contact with the hitbox
                 {
                     if (p.active && p.hostile && p.getRect().Intersects(Projectile.getRect()))
                     {
-                        Systems.DeflectionHelper.Deflect(Projectile, p, 6);
-                        bulletDeflectionAmount--;
-                        if (bulletDeflectionAmount <= 0)
-                            break;
+                        if (Systems.DeflectionHelper.Deflect(Projectile, p, 6))
+                        {
+                            bulletDeflectionAmount--;
+                            if (bulletDeflectionAmount <= 0)
+                                break;
+                        }
                     }
                 }
             }

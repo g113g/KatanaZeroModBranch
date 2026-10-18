@@ -160,3 +160,5 @@ ProgressionDamageTooltip:
 	Makes all katanas increase their damage and crit when you kill a boss, similar to Dragon's Whisper. 
 	What can I say, you have every right to play the game however you want. Have fun.
 	'''
+CustomFontLabel: Katana Zero Font Tooltips
+CustomFontTooltip: Renders item names and tooltips for Katana Zero weapons using the authentic VCR OSD Mono font.

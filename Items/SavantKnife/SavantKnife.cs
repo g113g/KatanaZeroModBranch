@@ -11,7 +11,7 @@ using static Terraria.ModLoader.ModLoader;
 
 namespace KatanaZERO.Items.SavantKnife
 {
-    public class SavantKnife : ModItem
+    public class SavantKnife : ModItem, Systems.IKatanaWeapon
     {
         //Please forgive me
         public static SoundStyle GetSlashSound(string swordName, int slashNumber)
@@ -48,6 +48,7 @@ namespace KatanaZERO.Items.SavantKnife
         public static readonly SoundStyle FifteenSlash3 = GetSlashSound("FifteensBlade", 3);
 
         private float attackCooldown = 0f;
+        public void ResetAttackCooldown() => attackCooldown = 0f;
         public bool hasAttacked = false;
         private readonly KatanaZERO mod = ModContent.GetInstance<KatanaZERO>();
 

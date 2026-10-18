@@ -9,7 +9,7 @@ using System;
 
 namespace KatanaZERO.Items.Claymore
 {
-    public class Claymore : ModItem
+    public class Claymore : ModItem, Systems.IKatanaWeapon
     {
         //Please forgive me
         public static SoundStyle GetSlashSound(string swordName, int slashNumber)
@@ -46,6 +46,7 @@ namespace KatanaZERO.Items.Claymore
         public static readonly SoundStyle FifteenSlash3 = GetSlashSound("FifteensBlade", 3);
 
         private float attackCooldown = 0f;
+        public void ResetAttackCooldown() => attackCooldown = 0f;
         public bool hasAttacked = false;
         private readonly KatanaZERO mod = ModContent.GetInstance<KatanaZERO>();
 

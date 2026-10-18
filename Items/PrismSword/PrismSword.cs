@@ -11,7 +11,7 @@ using static Terraria.ModLoader.ModLoader;
 
 namespace KatanaZERO.Items.PrismSword
 {
-    public class PrismSword: ModItem
+    public class PrismSword : ModItem, Systems.IKatanaWeapon
     {
         //Please forgive me
         public static SoundStyle GetSlashSound(string swordName, int slashNumber)
@@ -48,6 +48,7 @@ namespace KatanaZERO.Items.PrismSword
         public static readonly SoundStyle FifteenSlash3 = GetSlashSound("FifteensBlade", 3);
 
         private float attackCooldown = 0f;
+        public void ResetAttackCooldown() => attackCooldown = 0f;
         public bool hasAttacked = false;
         private readonly KatanaZERO mod = ModContent.GetInstance<KatanaZERO>();
 

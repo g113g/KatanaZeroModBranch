@@ -46,6 +46,11 @@ namespace KatanaZERO.Systems
         [TooltipKey("$Mods.KatanaZERO.ToggleDropTooltip")]
         [DefaultValue(true)]
         public bool ToggleDrop;
+
+        [LabelKey("$Mods.KatanaZERO.CustomFontLabel")]
+        [TooltipKey("$Mods.KatanaZERO.CustomFontTooltip")]
+        [DefaultValue(true)]
+        public bool CustomFont;
         /// 
         /// 
         /// 

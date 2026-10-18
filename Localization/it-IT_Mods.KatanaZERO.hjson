@@ -160,3 +160,5 @@ ProgressionDamageTooltip:
 	Fa in modo che tutte le katane aumentino il loro danno e il loro effetto critico quando uccidi un boss, simile al Sussurro del Drago. 
 	Che posso dire, hai tutto il diritto di giocare come vuoi. Divertiti.
 	'''
+CustomFontLabel: Carattere Katana Zero nelle descrizioni
+CustomFontTooltip: Mostra i nomi e le descrizioni delle armi di Katana Zero usando l'autentico font VCR OSD Mono.

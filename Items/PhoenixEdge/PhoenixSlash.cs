@@ -65,16 +65,18 @@ namespace KatanaZERO.Items.PhoenixEdge
                 }
             }
 
-            if (bulletDeflectionAmount > 0)
+            if (bulletDeflectionAmount > 0 && Systems.KatanaGlobalProjectile.CanDeflect(Projectile))
             {
                 foreach (Projectile p in Main.projectile) //deflect projectiles in contact with the hitbox
                 {
                     if (p.active && p.hostile && p.getRect().Intersects(Projectile.getRect()))
                     {
-                        Systems.DeflectionHelper.Deflect(Projectile, p, 9);
-                        bulletDeflectionAmount--;
-                        if (bulletDeflectionAmount <= 0)
-                            break;
+                        if (Systems.DeflectionHelper.Deflect(Projectile, p, 9))
+                        {
+                            bulletDeflectionAmount--;
+                            if (bulletDeflectionAmount <= 0)
+                                break;
+                        }
                     }
                 }
             }

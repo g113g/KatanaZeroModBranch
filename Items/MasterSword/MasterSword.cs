@@ -10,7 +10,7 @@ using KatanaZERO.Systems;
 
 namespace KatanaZERO.Items.MasterSword
 {
-    public class MasterSword : ModItem
+    public class MasterSword : ModItem, Systems.IKatanaWeapon
     {
         //Please forgive me
         public static SoundStyle GetSlashSound(string swordName, int slashNumber)
@@ -47,6 +47,7 @@ namespace KatanaZERO.Items.MasterSword
         public static readonly SoundStyle FifteenSlash3 = GetSlashSound("FifteensBlade", 3);
 
         private float attackCooldown;
+        public void ResetAttackCooldown() => attackCooldown = 0f;
         public bool hasAttacked = false;
 
         public override void SetDefaults()

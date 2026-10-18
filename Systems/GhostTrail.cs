@@ -30,20 +30,51 @@ namespace KatanaZERO.Systems
                 return;
 
             var katanaPlayer = drawInfo.drawPlayer.GetModPlayer<KatanaPlayer>();
-            if (katanaPlayer.ActiveGhosts.Count == 0)
+            if (katanaPlayer.ActiveGhosts.Count == 0 && katanaPlayer.ActiveSlowMoGhosts.Count == 0)
             {
                 katanaPlayer.LastGhostDrawDataCount = 0;
                 return;
             }
 
             int addedGhostDrawData = 0;
+            int colorOnlyShader = Terraria.ID.ContentSamples.CommonlyUsedContentSamples.ColorOnlyShaderIndex;
+
+            // 1. Render constant slow-mo trailing ghosts (~5-10 short ghosts tightly trailing Fifteen and fading fast)
+            foreach (var smGhost in katanaPlayer.ActiveSlowMoGhosts)
+            {
+                if (smGhost.DrawDataList == null || smGhost.DrawDataList.Count == 0)
+                    continue;
+
+                float smProgress = (float)smGhost.TimeLeft / smGhost.MaxTimeLeft;
+                float smAlpha = smProgress * smProgress * 0.70f;
+
+                Vector2 currentGhostScreenPos = smGhost.WorldPosition - Main.screenPosition;
+                Vector2 capturedPlayerScreenPos = smGhost.BasePlayerPosition - smGhost.BaseScreenPosition;
+
+                foreach (var dd in smGhost.DrawDataList)
+                {
+                    if (dd.texture == null)
+                        continue;
+
+                    Vector2 localOffset = dd.position - capturedPlayerScreenPos;
+                    DrawData smDd = dd;
+                    smDd.position = currentGhostScreenPos + localOffset;
+                    smDd.shader = colorOnlyShader;
+                    smDd.color = new Color(0, 195, 255) * smAlpha;
+                    smDd.ignorePlayerRotation = true;
+                    drawInfo.DrawDataCache.Add(smDd);
+                    addedGhostDrawData++;
+                }
+            }
+
+            // 2. Render dense Dragon Dash ghost silhouettes (5-frame snappy fade)
             foreach (var ghost in katanaPlayer.ActiveGhosts)
             {
                 if (ghost.DrawDataList == null || ghost.DrawDataList.Count == 0)
                     continue;
 
                 float progress = (float)ghost.TimeLeft / ghost.MaxTimeLeft;
-                float alpha = progress * progress; // Smooth quadratic fade-out
+                float alpha = progress; // Linear 5-frame fade: frames 3, 2, 1 are semitransparent
 
                 // World position anchored screen offset (accounts for camera scroll and player dash)
                 Vector2 currentGhostScreenPos = ghost.WorldPosition - Main.screenPosition;
@@ -51,9 +82,8 @@ namespace KatanaZERO.Systems
 
                 Vector2 cyanOffset = new Vector2(-ghost.GlitchOffset, 0f);
                 Vector2 magentaOffset = new Vector2(ghost.GlitchOffset, 0f);
-                int colorOnlyShader = Terraria.ID.ContentSamples.CommonlyUsedContentSamples.ColorOnlyShaderIndex;
 
-                // 1. Cyan offset ghost silhouette (Katana Zero chromatic glitching)
+                // Cyan offset ghost silhouette (Katana Zero chromatic glitching)
                 foreach (var dd in ghost.DrawDataList)
                 {
                     if (dd.texture == null)
@@ -63,13 +93,13 @@ namespace KatanaZERO.Systems
                     DrawData cyanDd = dd;
                     cyanDd.position = currentGhostScreenPos + localOffset + cyanOffset;
                     cyanDd.shader = colorOnlyShader;
-                    cyanDd.color = new Color(0, 240, 255) * (alpha * 0.75f);
+                    cyanDd.color = new Color(0, 240, 255) * (alpha * 0.80f);
                     cyanDd.ignorePlayerRotation = true;
                     drawInfo.DrawDataCache.Add(cyanDd);
                     addedGhostDrawData++;
                 }
 
-                // 2. Magenta offset ghost silhouette (Katana Zero chromatic glitching)
+                // Magenta offset ghost silhouette (Katana Zero chromatic glitching)
                 foreach (var dd in ghost.DrawDataList)
                 {
                     if (dd.texture == null)
@@ -79,13 +109,13 @@ namespace KatanaZERO.Systems
                     DrawData magDd = dd;
                     magDd.position = currentGhostScreenPos + localOffset + magentaOffset;
                     magDd.shader = colorOnlyShader;
-                    magDd.color = new Color(255, 20, 200) * (alpha * 0.75f);
+                    magDd.color = new Color(255, 20, 200) * (alpha * 0.80f);
                     magDd.ignorePlayerRotation = true;
                     drawInfo.DrawDataCache.Add(magDd);
                     addedGhostDrawData++;
                 }
 
-                // 3. Whitened core silhouette
+                // Whitened core silhouette
                 foreach (var dd in ghost.DrawDataList)
                 {
                     if (dd.texture == null)

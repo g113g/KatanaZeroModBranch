@@ -10,6 +10,49 @@ using KatanaZERO.Items.FifteensBlade;
 
 namespace KatanaZERO.Systems
 {
+    public class DashStreak
+    {
+        public Vector2 StartCenter;
+        public Vector2 EndCenter;
+        public Vector2 Direction;
+        public float Distance;
+        public float Rotation;
+        public int TimeLeft;
+        public int MaxTimeLeft;
+    }
+
+    public class ScreenCutLine
+    {
+        public Vector2 WorldOrigin;
+        public float Angle;
+        public int TimeLeft;
+        public int MaxTimeLeft;
+    }
+
+    public class SlowMoGhost
+    {
+        public Vector2 WorldPosition;
+        public Vector2 BasePlayerPosition;
+        public Vector2 BaseScreenPosition;
+        public List<DrawData> DrawDataList;
+        public int TimeLeft;
+        public int MaxTimeLeft;
+        public int Direction;
+    }
+
+    public class DyingEnemyGlitch
+    {
+        public Microsoft.Xna.Framework.Graphics.Texture2D Texture;
+        public Rectangle SourceRect;
+        public Vector2 Origin;
+        public Vector2 WorldPosition;
+        public float Rotation;
+        public float Scale;
+        public Microsoft.Xna.Framework.Graphics.SpriteEffects Effects;
+        public int TimeLeft;
+        public int MaxTimeLeft;
+    }
+
     public class KatanaPlayer : ModPlayer
     {
         // Standalone Chronos Battery pool (11 segments, 10 units each = 110 max)
@@ -27,6 +70,7 @@ namespace KatanaZERO.Systems
         public bool IsHoldingFifteen = false;
         public bool IsHoldingAnyKatana = false;
         public bool IsSlowingTime = false;
+        public bool IsDragonDashing = false;
         public float SlowMoVisualIntensity = 0f;
 
         // Dictionaries for tracking slowed mob and projectile speeds
@@ -35,6 +79,19 @@ namespace KatanaZERO.Systems
 
         // Active ghost silhouettes along dash trajectory
         public List<GhostSilhouette> ActiveGhosts = new List<GhostSilhouette>();
+
+        // Active continuous chromatic motion blur dash streaks
+        public List<DashStreak> ActiveStreaks = new List<DashStreak>();
+
+        // Active full-screen kill slash cut lines
+        public List<ScreenCutLine> ActiveScreenCuts = new List<ScreenCutLine>();
+
+        // Active slow-mo movement ghosts (5-10 short trailing ghosts when moving in slowmo)
+        public List<SlowMoGhost> ActiveSlowMoGhosts = new List<SlowMoGhost>();
+        private int slowMoGhostSpawnTimer = 0;
+
+        // Active dying enemy glitch ghosts left at standing position on dash kill
+        public List<DyingEnemyGlitch> ActiveDyingEnemyGlitches = new List<DyingEnemyGlitch>();
 
         // Cached snapshot of player DrawData
         public List<DrawData> CapturedPlayerDrawData = new List<DrawData>();
@@ -131,8 +188,8 @@ namespace KatanaZERO.Systems
             int count = positions.Count;
             for (int i = 0; i < count; i++)
             {
-                // Stagger duration so closer afterimages dissolve smoothly
-                int life = 18 + (int)((float)i / count * 8);
+                // Exactly 5 frames lifetime (fades smoothly in frames 4, 3, 2, 1)
+                int life = 5;
 
                 ActiveGhosts.Add(new GhostSilhouette
                 {
@@ -146,6 +203,63 @@ namespace KatanaZERO.Systems
                     DashDirection = dashDirection
                 });
             }
+        }
+
+        public void SpawnDashStreak(Vector2 startCenter, Vector2 endCenter, Vector2 direction)
+        {
+            float dist = Vector2.Distance(startCenter, endCenter);
+            float rot = direction.ToRotation();
+            int life = 6; // Exactly 5-6 frames lifetime matching Katana Zero
+            ActiveStreaks.Add(new DashStreak
+            {
+                StartCenter = startCenter,
+                EndCenter = endCenter,
+                Direction = direction,
+                Distance = dist,
+                Rotation = rot,
+                TimeLeft = life,
+                MaxTimeLeft = life
+            });
+        }
+
+        public void SpawnScreenCut(Vector2 worldPos, float angle)
+        {
+            foreach (var existing in ActiveScreenCuts)
+            {
+                if (Vector2.DistanceSquared(existing.WorldOrigin, worldPos) < 400f && existing.TimeLeft > existing.MaxTimeLeft - 3)
+                    return;
+            }
+
+            int life = 12;
+            ActiveScreenCuts.Add(new ScreenCutLine
+            {
+                WorldOrigin = worldPos,
+                Angle = angle,
+                TimeLeft = life,
+                MaxTimeLeft = life
+            });
+        }
+
+        public void SpawnDyingEnemyGlitch(NPC npc)
+        {
+            var drawInfo = MyGlobalNPC.GetNPCDrawInfo(npc, Vector2.Zero);
+            if (!drawInfo.HasValue)
+                return;
+
+            var (texture, _, origin, sourceRect, effects) = drawInfo.Value;
+            int life = 26; // ~0.43s lingering white-purple glitch ghost while body falls
+            ActiveDyingEnemyGlitches.Add(new DyingEnemyGlitch
+            {
+                Texture = texture,
+                SourceRect = sourceRect,
+                Origin = origin,
+                WorldPosition = npc.Center,
+                Rotation = npc.rotation,
+                Scale = npc.scale,
+                Effects = effects,
+                TimeLeft = life,
+                MaxTimeLeft = life
+            });
         }
 
         public void SlowDownWorld()
@@ -372,6 +486,48 @@ namespace KatanaZERO.Systems
                 DragonDashCooldown--;
             }
 
+            // 5-10 short ghosts trailing close behind Fifteen while moving in slow-mo
+            if (IsSlowingTime && Player.velocity.LengthSquared() > 0.10f)
+            {
+                if (++slowMoGhostSpawnTimer >= 2)
+                {
+                    slowMoGhostSpawnTimer = 0;
+                    if (CapturedPlayerDrawData != null && CapturedPlayerDrawData.Count > 0)
+                    {
+                        int ghostLife = 9; // Fades fast over 9 ticks (~0.15s)
+                        ActiveSlowMoGhosts.Add(new SlowMoGhost
+                        {
+                            WorldPosition = Player.position,
+                            BasePlayerPosition = CapturedPlayerPosition,
+                            BaseScreenPosition = CapturedScreenPosition,
+                            DrawDataList = new List<DrawData>(CapturedPlayerDrawData),
+                            TimeLeft = ghostLife,
+                            MaxTimeLeft = ghostLife,
+                            Direction = Player.direction
+                        });
+
+                        while (ActiveSlowMoGhosts.Count > 9)
+                        {
+                            ActiveSlowMoGhosts.RemoveAt(0);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                slowMoGhostSpawnTimer = 0;
+            }
+
+            // Update active slow-mo trailing ghosts
+            for (int i = ActiveSlowMoGhosts.Count - 1; i >= 0; i--)
+            {
+                ActiveSlowMoGhosts[i].TimeLeft--;
+                if (ActiveSlowMoGhosts[i].TimeLeft <= 0)
+                {
+                    ActiveSlowMoGhosts.RemoveAt(i);
+                }
+            }
+
             // Update ghost silhouettes along dash path
             for (int i = ActiveGhosts.Count - 1; i >= 0; i--)
             {
@@ -380,6 +536,49 @@ namespace KatanaZERO.Systems
                 {
                     ActiveGhosts.RemoveAt(i);
                 }
+            }
+
+            // Update active dash streaks
+            for (int i = ActiveStreaks.Count - 1; i >= 0; i--)
+            {
+                ActiveStreaks[i].TimeLeft--;
+                if (ActiveStreaks[i].TimeLeft <= 0)
+                {
+                    ActiveStreaks.RemoveAt(i);
+                }
+            }
+
+            // Update active screen cut lines
+            for (int i = ActiveScreenCuts.Count - 1; i >= 0; i--)
+            {
+                ActiveScreenCuts[i].TimeLeft--;
+                if (ActiveScreenCuts[i].TimeLeft <= 0)
+                {
+                    ActiveScreenCuts.RemoveAt(i);
+                }
+            }
+
+            // Update active dying enemy glitches
+            for (int i = ActiveDyingEnemyGlitches.Count - 1; i >= 0; i--)
+            {
+                ActiveDyingEnemyGlitches[i].TimeLeft--;
+                if (ActiveDyingEnemyGlitches[i].TimeLeft <= 0)
+                {
+                    ActiveDyingEnemyGlitches.RemoveAt(i);
+                }
+            }
+        }
+
+        public override void DrawEffects(PlayerDrawSet drawInfo, ref float r, ref float g, ref float b, ref float a, ref bool fullBright)
+        {
+            // Fifteen turns electric blue when in slow-mo
+            if (SlowMoVisualIntensity > 0.01f)
+            {
+                float t = SlowMoVisualIntensity;
+                r = MathHelper.Lerp(r, r * 0.20f, t);
+                g = MathHelper.Lerp(g, g * 0.75f + 0.15f, t);
+                b = MathHelper.Lerp(b, Math.Min(1f, b * 1.35f + 0.35f), t);
+                fullBright = true;
             }
         }
     }

@@ -59,6 +59,24 @@ namespace KatanaZERO.Systems
                 Main.spriteBatch.End();
             }
 
+            // Render continuous chromatic motion blur dash streaks (Katana Zero Dragon Dash laser smear)
+            if (katanaPlayer.ActiveStreaks.Count > 0)
+            {
+                Main.spriteBatch.Begin(
+                    SpriteSortMode.Deferred,
+                    BlendState.Additive,
+                    SamplerState.LinearClamp,
+                    DepthStencilState.None,
+                    RasterizerState.CullCounterClockwise,
+                    null,
+                    Main.GameViewMatrix.TransformationMatrix
+                );
+
+                DrawDashStreaks(Main.spriteBatch, katanaPlayer);
+
+                Main.spriteBatch.End();
+            }
+
             float intensity = KatanaPlayer.LocalSlowMoIntensity;
             if (intensity <= 0.001f)
                 return;
@@ -192,6 +210,160 @@ namespace KatanaZERO.Systems
             }
         }
 
+        private static void DrawDashStreaks(SpriteBatch spriteBatch, KatanaPlayer katanaPlayer)
+        {
+            if (katanaPlayer.ActiveStreaks.Count == 0 || WhitePixel == null || WhitePixel.IsDisposed)
+                return;
+
+            foreach (var streak in katanaPlayer.ActiveStreaks)
+            {
+                float progress = (float)streak.TimeLeft / streak.MaxTimeLeft;
+                float alpha = progress * progress;
+
+                Vector2 startScreen = streak.StartCenter - Main.screenPosition;
+                Vector2 endScreen = streak.EndCenter - Main.screenPosition;
+                Vector2 centerScreen = (startScreen + endScreen) / 2f;
+                float length = streak.Distance;
+                float rot = streak.Rotation;
+
+                Vector2 perp = streak.Direction.RotatedBy(MathHelper.PiOver2);
+                if (perp.Y < 0f)
+                {
+                    perp = -perp; // Ensure -perp is always pointing upwards
+                }
+
+                // 1. Top sharp lime laser boundary
+                spriteBatch.Draw(
+                    WhitePixel,
+                    centerScreen - perp * 19f,
+                    null,
+                    new Color(205, 255, 10) * (alpha * 0.95f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(length, 3.5f),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 2. Upper chartreuse / lime glow band
+                spriteBatch.Draw(
+                    WhitePixel,
+                    centerScreen - perp * 13f,
+                    null,
+                    new Color(165, 255, 30) * (alpha * 0.85f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(length, 10f),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 3. Upper-center lime-cyan gradient
+                spriteBatch.Draw(
+                    WhitePixel,
+                    centerScreen - perp * 6f,
+                    null,
+                    new Color(110, 255, 190) * (alpha * 0.80f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(length, 8f),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 4. Center brilliant white-cyan core smear
+                spriteBatch.Draw(
+                    WhitePixel,
+                    centerScreen,
+                    null,
+                    new Color(245, 255, 255) * (alpha * 0.95f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(length, 20f),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 5. Lower-center sharp cyan laser line (Katana Zero spr_dragon_dash_0)
+                spriteBatch.Draw(
+                    WhitePixel,
+                    centerScreen + perp * 4f,
+                    null,
+                    new Color(0, 245, 255) * (alpha * 1.0f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(length, 4f),
+                    SpriteEffects.None,
+                    0f
+                );
+                spriteBatch.Draw(
+                    WhitePixel,
+                    centerScreen + perp * 4f,
+                    null,
+                    Color.White * (alpha * 0.95f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(length, 1.5f),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 6. Lower blue-cyan glow band
+                spriteBatch.Draw(
+                    WhitePixel,
+                    centerScreen + perp * 12f,
+                    null,
+                    new Color(45, 130, 255) * (alpha * 0.85f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(length, 10f),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 7. Bottom sharp purple laser boundary
+                spriteBatch.Draw(
+                    WhitePixel,
+                    centerScreen + perp * 19f,
+                    null,
+                    new Color(160, 25, 255) * (alpha * 0.95f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(length, 3.5f),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 8. Fine GameMaker scanline motion blur texture ribs
+                int ribCount = Math.Max(1, (int)(length / 4f));
+                for (int r = 0; r <= ribCount; r++)
+                {
+                    float ribT = r / (float)ribCount;
+                    Vector2 ribPos = startScreen + streak.Direction * (ribT * length);
+                    float ribAlpha = alpha * (0.18f + 0.12f * (float)Math.Sin(r * 1.8f));
+                    spriteBatch.Draw(
+                        WhitePixel,
+                        ribPos,
+                        null,
+                        new Color(210, 245, 255) * ribAlpha,
+                        rot + MathHelper.PiOver2,
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(36f, 1.5f),
+                        SpriteEffects.None,
+                        0f
+                    );
+                }
+
+                // 9. Start launch flash burst
+                DrawSolidCircle(spriteBatch, startScreen, 18f, new Color(140, 255, 100) * (alpha * 0.5f));
+                DrawSolidCircle(spriteBatch, startScreen, 9f, Color.White * (alpha * 0.85f));
+
+                // 10. End impact flash burst
+                DrawSolidCircle(spriteBatch, endScreen, 24f, new Color(0, 245, 255) * (alpha * 0.6f));
+                DrawSolidCircle(spriteBatch, endScreen, 12f, Color.White * (alpha * 0.9f));
+            }
+        }
+
         private static void DrawLine(SpriteBatch spriteBatch, Vector2 start, Vector2 end, Color color, float width)
         {
             if (WhitePixel == null || WhitePixel.IsDisposed)
@@ -218,6 +390,19 @@ namespace KatanaZERO.Systems
 
         public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
         {
+            int cutIndex = layers.FindIndex(layer => layer.Name.Equals("Vanilla: Entity Health Bars"));
+            if (cutIndex == -1) cutIndex = 0;
+            layers.Insert(cutIndex, new LegacyGameInterfaceLayer(
+                "KatanaZERO: Screen Cut Line",
+                delegate
+                {
+                    DrawDyingEnemyGlitches(Main.spriteBatch);
+                    DrawScreenCutLines(Main.spriteBatch);
+                    return true;
+                },
+                InterfaceScaleType.Game
+            ));
+
             var batteryLayer = new LegacyGameInterfaceLayer(
                 "KatanaZERO: Battery Bar",
                 delegate
@@ -237,6 +422,193 @@ namespace KatanaZERO.Systems
             {
                 layers.Add(batteryLayer);
             }
+        }
+
+        private static void DrawDyingEnemyGlitches(SpriteBatch spriteBatch)
+        {
+            Player player = Main.LocalPlayer;
+            if (player == null || !player.active)
+                return;
+
+            var katanaPlayer = player.GetModPlayer<KatanaPlayer>();
+            if (katanaPlayer.ActiveDyingEnemyGlitches.Count == 0)
+                return;
+
+            spriteBatch.End();
+            spriteBatch.Begin(
+                SpriteSortMode.Deferred,
+                BlendState.Additive,
+                SamplerState.LinearClamp,
+                DepthStencilState.None,
+                RasterizerState.CullCounterClockwise,
+                null,
+                Main.GameViewMatrix.TransformationMatrix
+            );
+
+            foreach (var glitch in katanaPlayer.ActiveDyingEnemyGlitches)
+            {
+                if (glitch.Texture == null || glitch.Texture.IsDisposed)
+                    continue;
+
+                float progress = (float)glitch.TimeLeft / glitch.MaxTimeLeft;
+                float alpha = progress * (0.80f + 0.20f * (float)Math.Sin(glitch.TimeLeft * 1.8f));
+
+                Vector2 screenPos = glitch.WorldPosition - Main.screenPosition;
+                Color magentaOuter = new Color(245, 45, 235) * (alpha * 0.75f);
+                Color cyanOuter = new Color(0, 215, 255) * (alpha * 0.55f);
+                Color whiteCore = new Color(255, 240, 255) * (alpha * 0.90f);
+
+                // Blurry white-purple chromatic glitch ghost left standing while physical body falls down
+                spriteBatch.Draw(glitch.Texture, screenPos + new Vector2(-4f, 0f), glitch.SourceRect, magentaOuter, glitch.Rotation, glitch.Origin, glitch.Scale, glitch.Effects, 0f);
+                spriteBatch.Draw(glitch.Texture, screenPos + new Vector2(4f, 0f), glitch.SourceRect, magentaOuter, glitch.Rotation, glitch.Origin, glitch.Scale, glitch.Effects, 0f);
+                spriteBatch.Draw(glitch.Texture, screenPos + new Vector2(0f, -2.5f), glitch.SourceRect, cyanOuter, glitch.Rotation, glitch.Origin, glitch.Scale, glitch.Effects, 0f);
+                spriteBatch.Draw(glitch.Texture, screenPos + new Vector2(0f, 2.5f), glitch.SourceRect, cyanOuter, glitch.Rotation, glitch.Origin, glitch.Scale, glitch.Effects, 0f);
+                spriteBatch.Draw(glitch.Texture, screenPos, glitch.SourceRect, whiteCore, glitch.Rotation, glitch.Origin, glitch.Scale, glitch.Effects, 0f);
+            }
+
+            spriteBatch.End();
+            spriteBatch.Begin(
+                SpriteSortMode.Deferred,
+                BlendState.AlphaBlend,
+                SamplerState.PointClamp,
+                DepthStencilState.None,
+                RasterizerState.CullCounterClockwise,
+                null,
+                Main.GameViewMatrix.TransformationMatrix
+            );
+        }
+
+        private static void DrawScreenCutLines(SpriteBatch spriteBatch)
+        {
+            Player player = Main.LocalPlayer;
+            if (player == null || !player.active)
+                return;
+
+            var katanaPlayer = player.GetModPlayer<KatanaPlayer>();
+            if (katanaPlayer.ActiveScreenCuts.Count == 0 || WhitePixel == null || WhitePixel.IsDisposed)
+                return;
+
+            spriteBatch.End();
+            spriteBatch.Begin(
+                SpriteSortMode.Deferred,
+                BlendState.Additive,
+                SamplerState.LinearClamp,
+                DepthStencilState.None,
+                RasterizerState.CullCounterClockwise,
+                null,
+                Main.GameViewMatrix.TransformationMatrix
+            );
+
+            foreach (var cut in katanaPlayer.ActiveScreenCuts)
+            {
+                float progress = (float)cut.TimeLeft / cut.MaxTimeLeft;
+                float alpha = progress * progress;
+
+                Vector2 originScreen = cut.WorldOrigin - Main.screenPosition;
+                float rot = cut.Angle;
+                Vector2 dir = new Vector2((float)Math.Cos(rot), (float)Math.Sin(rot));
+                Vector2 perp = new Vector2(-dir.Y, dir.X);
+
+                // Frame alternation: Even ticks cyan/white, Odd ticks magenta/purple (Katana Zero screen-cutting kill visual)
+                bool isEvenFrame = (cut.TimeLeft % 2 == 0);
+                Color outerColor = isEvenFrame ? new Color(0, 245, 255) : new Color(245, 25, 220);
+                Color coreColor = isEvenFrame ? Color.White : new Color(255, 230, 255);
+                Color chromaticOffsetColor = isEvenFrame ? new Color(245, 25, 220) : new Color(0, 245, 255);
+
+                float lineLength = Math.Max(Main.screenWidth, Main.screenHeight) * 3f;
+
+                // 1. Broad outer atmospheric cut glow (bolder width for high visibility)
+                spriteBatch.Draw(
+                    WhitePixel,
+                    originScreen,
+                    null,
+                    outerColor * (alpha * 0.45f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(lineLength, 44f * progress),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 2. Focused vibrant chromatic laser band
+                spriteBatch.Draw(
+                    WhitePixel,
+                    originScreen,
+                    null,
+                    outerColor * (alpha * 0.85f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(lineLength, 18f * progress),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 3. Piercing razor-sharp central core laser beam
+                spriteBatch.Draw(
+                    WhitePixel,
+                    originScreen,
+                    null,
+                    coreColor * (alpha * 0.98f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(lineLength, 6f),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 4. White central razor slit
+                spriteBatch.Draw(
+                    WhitePixel,
+                    originScreen,
+                    null,
+                    Color.White * (alpha * 1.0f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(lineLength, 3f),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 5. Chromatic glitch fringe lines (bolder offsets and widths)
+                float glitchOffset = isEvenFrame ? 5f : -5f;
+                spriteBatch.Draw(
+                    WhitePixel,
+                    originScreen + perp * glitchOffset,
+                    null,
+                    chromaticOffsetColor * (alpha * 0.70f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(lineLength, 3.5f),
+                    SpriteEffects.None,
+                    0f
+                );
+                spriteBatch.Draw(
+                    WhitePixel,
+                    originScreen - perp * (glitchOffset * 0.6f),
+                    null,
+                    outerColor * (alpha * 0.60f),
+                    rot,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(lineLength, 2.5f),
+                    SpriteEffects.None,
+                    0f
+                );
+
+                // 6. Kill impact origin flash burst
+                DrawSolidCircle(spriteBatch, originScreen, 36f * progress, outerColor * (alpha * 0.6f));
+                DrawSolidCircle(spriteBatch, originScreen, 18f * progress, Color.White * (alpha * 0.9f));
+            }
+
+            spriteBatch.End();
+            spriteBatch.Begin(
+                SpriteSortMode.Deferred,
+                BlendState.AlphaBlend,
+                SamplerState.PointClamp,
+                DepthStencilState.None,
+                RasterizerState.CullCounterClockwise,
+                null,
+                Main.GameViewMatrix.TransformationMatrix
+            );
         }
 
         private void DrawBatteryBar(SpriteBatch spriteBatch)
