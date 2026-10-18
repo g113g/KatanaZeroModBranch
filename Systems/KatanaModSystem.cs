@@ -26,14 +26,34 @@ namespace KatanaZERO.Systems
 
         public override void Unload()
         {
-            WhitePixel?.Dispose();
-            WhitePixel = null;
+            if (Main.netMode != Terraria.ID.NetmodeID.Server)
+            {
+                var pixel = WhitePixel;
+                WhitePixel = null;
+                if (pixel != null)
+                {
+                    Main.QueueMainThreadAction(() =>
+                    {
+                        pixel.Dispose();
+                    });
+                }
+            }
+            else
+            {
+                WhitePixel = null;
+            }
         }
 
         public override void PostDrawTiles()
         {
-            if (WhitePixel == null || WhitePixel.IsDisposed)
+            if (Main.netMode == Terraria.ID.NetmodeID.Server)
                 return;
+
+            if (WhitePixel == null || WhitePixel.IsDisposed)
+            {
+                WhitePixel = new Texture2D(Main.graphics.GraphicsDevice, 1, 1);
+                WhitePixel.SetData(new[] { Color.White });
+            }
 
             Player player = Main.LocalPlayer;
             if (player == null || !player.active || player.dead)
