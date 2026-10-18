@@ -1,0 +1,39 @@
+The Katana ZERO Mod adds the seven katanas from the game Katana ZERO to Terraria.
+These weapons have unique slashing animations, can deflect bullets, and lunge you forward like the original game.
+
+[b]If you want to report a bug or give me an idea or anything, please feel free to add me on Discord @darkosto0[/b]
+
+---- Disclaimer ----
+This is a fan-made project inspired by Katana ZERO. All rights to the original IP, assets, and sounds belong to Askiisoft and Devolver Digital. 
+No profit is made from this mod. If requested, I will respectfully take it down.
+
+---- Weapons Added ----
+
+* ZERO's Katana: The original, no special effects, just bullet deflection
+(Early Pre-Hardmode)
+
+* Prism Sword: Slightly increased stats from the original, with a colorful slash
+(Late Pre-Hardmode)
+
+* Sword of Masters: Slower attack speed, increased range, shoots a projectile, more hits per slash
+(Post-Destroyer)
+
+* Savant Knife: Faster attack speed, low range, high amount of hits per slash
+(Post-Mechs)
+
+* Claymore Prototype: Slow attack speed, big hit range and width, unlimited amount of bullet deflections per swing (Post-Golem)
+
+* Phoenix's Edge: Slow attack speed, very high range, shoots flames that burn enemies
+(Post-Cultist)
+
+* Fifteen's Blade: High attack speed, very high reach, teleports to the cursor on holding and releasing right click, meant to kill most enemies in one hit (Legendary Weapon)
+- Has 1/40000 chance to drop from any hostile enemy, or 1/9 to drop from Moon Lord.
+
+---- Special Thanks To ----
+* [url=https://github.com/g113g]g113g[/url] for a Russian translation, code help and for uploading the mod to Steam Workshop for me.
+* [url=https://github.com/Sequile]Sequile[/url] for code help and balancing the weapons.
+* [url=https://steamcommunity.com/id/ChrisGug/]ChrisGug[/url] for an Italian translation.
+
+The source code is available for everyone on [url=https://github.com/darkosto0/Katana-ZERO-Weapons]GitHub[/url].
+
+I plan on maintaining the mod as long as I recieve any feedback (ideas, bugs, anything).
