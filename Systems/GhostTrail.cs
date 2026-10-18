@@ -25,7 +25,6 @@ namespace KatanaZERO.Systems
 
         protected override void Draw(ref PlayerDrawSet drawInfo)
         {
-            // Do not draw for shadow clones or if player is not local/active
             if (drawInfo.shadow != 0f)
                 return;
 
@@ -39,7 +38,6 @@ namespace KatanaZERO.Systems
             int addedGhostDrawData = 0;
             int colorOnlyShader = Terraria.ID.ContentSamples.CommonlyUsedContentSamples.ColorOnlyShaderIndex;
 
-            // 1. Render constant slow-mo trailing ghosts (~5-10 short ghosts tightly trailing Fifteen and fading fast)
             foreach (var smGhost in katanaPlayer.ActiveSlowMoGhosts)
             {
                 if (smGhost.DrawDataList == null || smGhost.DrawDataList.Count == 0)
@@ -67,23 +65,20 @@ namespace KatanaZERO.Systems
                 }
             }
 
-            // 2. Render dense Dragon Dash ghost silhouettes (5-frame snappy fade)
             foreach (var ghost in katanaPlayer.ActiveGhosts)
             {
                 if (ghost.DrawDataList == null || ghost.DrawDataList.Count == 0)
                     continue;
 
                 float progress = (float)ghost.TimeLeft / ghost.MaxTimeLeft;
-                float alpha = progress; // Linear 5-frame fade: frames 3, 2, 1 are semitransparent
+                float alpha = progress;
 
-                // World position anchored screen offset (accounts for camera scroll and player dash)
                 Vector2 currentGhostScreenPos = ghost.WorldPosition - Main.screenPosition;
                 Vector2 capturedPlayerScreenPos = ghost.BasePlayerPosition - ghost.BaseScreenPosition;
 
                 Vector2 cyanOffset = new Vector2(-ghost.GlitchOffset, 0f);
                 Vector2 magentaOffset = new Vector2(ghost.GlitchOffset, 0f);
 
-                // Cyan offset ghost silhouette (Katana Zero chromatic glitching)
                 foreach (var dd in ghost.DrawDataList)
                 {
                     if (dd.texture == null)
@@ -99,7 +94,6 @@ namespace KatanaZERO.Systems
                     addedGhostDrawData++;
                 }
 
-                // Magenta offset ghost silhouette (Katana Zero chromatic glitching)
                 foreach (var dd in ghost.DrawDataList)
                 {
                     if (dd.texture == null)
@@ -115,7 +109,6 @@ namespace KatanaZERO.Systems
                     addedGhostDrawData++;
                 }
 
-                // Whitened core silhouette
                 foreach (var dd in ghost.DrawDataList)
                 {
                     if (dd.texture == null)

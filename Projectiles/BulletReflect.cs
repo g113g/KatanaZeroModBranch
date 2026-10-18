@@ -17,7 +17,7 @@ namespace KatanaZERO.Projectiles
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
             Projectile.penetrate = -1;
-            Projectile.timeLeft = 15; // 5 animation frames * 3 ticks each
+            Projectile.timeLeft = 15;
             Main.projFrames[Projectile.type] = 5;
         }
 
@@ -47,7 +47,6 @@ namespace KatanaZERO.Projectiles
             Rectangle sourceRect = new Rectangle(0, Projectile.frame * frameHeight, texture.Width, frameHeight);
             Vector2 origin = new Vector2(texture.Width / 2f, frameHeight / 2f);
 
-            // Draw with crisp additive deflection spark
             Main.EntitySpriteDraw(
                 texture,
                 Projectile.Center - Main.screenPosition,

@@ -81,7 +81,7 @@ Items: {
 			Se un nemico normale viene colpito dallo [c/e69900:Scatto del Drago], subirà Danni 5x.
 			Tenere premuto lo [c/e69900:Scatto del Drago] consuma la Batteria Chronos.
 			[c/e69900:Scatto del Drago] ha 3 secondi di ricarica.
-			[c/e69900:Scatto del Drago] dà 1 secondo di immunità se un nemico viene colpito.
+			[c/e69900:Scatto del Drago] dà immunità in base a quanto lontano scatti. (Minimo 0.5 secondi)
 			''Lui non è il Drago. [c/ff3300:Io lo sono].''
 			'''
 	}

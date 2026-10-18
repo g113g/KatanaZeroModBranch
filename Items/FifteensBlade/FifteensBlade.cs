@@ -83,9 +83,9 @@ namespace KatanaZERO.Items.FifteensBlade
             string selectedWeaponSound = KatanaZERO.fifteensKatanaSound;
             PowerLevelManager power = new();
 
-            power.Apply(Item); //THIS. IS. POWER.
+            power.Apply(Item); //THIS. IS. POWER. 
 
-            Item.DamageType = DamageClass.Melee;
+            Item.DamageType = DamageClass.Melee; //That was Raw Metal reference?
             Item.width = 40;
             Item.height = 40;
             Item.rare = ItemRarityID.Master;
@@ -168,7 +168,7 @@ namespace KatanaZERO.Items.FifteensBlade
                 hasRightClicked = false;
             }
 
-            if (dragonCooldown <= 0)
+            if (dragonCooldown <= 0 && katanaPlayer.DragonDashCooldown <= 0)
             {
                 if (!Main.mouseItem.IsAir || Main.HoveringOverAnNPC || Main.playerInventory || Main.InGuideCraftMenu || Main.InReforgeMenu)
                 {
@@ -201,14 +201,12 @@ namespace KatanaZERO.Items.FifteensBlade
                     }
                     else
                     {
-                        // Battery depleted while holding
                         hasRightClicked = false;
                         katanaPlayer.EndSlowMo();
                     }
                 }
                 else if (!Main.mouseRight && hasRightClicked)
                 {
-                    // Releasing right-click launches the dash towards cursor
                     hasRightClicked = false;
                     katanaPlayer.EndSlowMo();
 
@@ -233,15 +231,21 @@ namespace KatanaZERO.Items.FifteensBlade
                 attackCooldown -= 1f;
             }
 
-            if (dragonCooldown > 0f)
+            var katanaPlayer = player.GetModPlayer<KatanaPlayer>();
+            if (katanaPlayer.DragonDashCooldown > 0)
+            {
+                dragonCooldown = katanaPlayer.DragonDashCooldown;
+            }
+            else if (dragonCooldown > 0f)
             {
                 dragonCooldown -= 1f;
-                player.GetModPlayer<KatanaPlayer>().DragonDashCooldown = (int)dragonCooldown;
+                katanaPlayer.DragonDashCooldown = (int)dragonCooldown;
             }
         }
         public override bool CanUseItem(Player player)
         {
-            if (Main.mouseRight == false && attackCooldown <= 0f && dragonCooldown <= 0f)
+            var katanaPlayer = player.GetModPlayer<KatanaPlayer>();
+            if (Main.mouseRight == false && attackCooldown <= 0f && dragonCooldown <= 0f && katanaPlayer.DragonDashCooldown <= 0)
             {
                 return true;
             }
@@ -305,11 +309,10 @@ namespace KatanaZERO.Items.FifteensBlade
             Dictionary<int, bool> hitEnemies = new Dictionary<int, bool>();
             List<Vector2> dashTrailPositions = new List<Vector2>();
 
-            // Collect trajectory positions for dense, continuous character motion blur smear
             dashTrailPositions.Add(player.position);
 
             float accumulatedDistance = 0f;
-            float trailStepDistance = 2.5f; // Ultra-dense spacing (2.5px step) so ghosts seamlessly blur into a continuous motion sheet
+            float trailStepDistance = 2.5f;
 
             katanaPlayer.IsDragonDashing = true;
             bool anyKilledDuringDash = false;
@@ -345,9 +348,6 @@ namespace KatanaZERO.Items.FifteensBlade
                 {
                     if (!enemy.friendly && enemy.Hitbox.Intersects(playerHitbox) && enemy.netID != 549)
                     {
-                        // Universal multipart entity check: resolves all segments of worms (Eater of Worlds, Destroyer, Wyvern, etc.)
-                        // and multipart bosses (Golem, Moon Lord, Skeletron, WoF, etc.) to the exact same root ID.
-                        // Ensures multipart entities take damage EXACTLY ONCE per dash!
                         int rootEntityId = KatanaZERO.GetRootEntityId(enemy);
 
                         if (hitEnemies.ContainsKey(rootEntityId) || hitEnemies.ContainsKey(enemy.whoAmI))
@@ -369,7 +369,6 @@ namespace KatanaZERO.Items.FifteensBlade
                             enemy.SimpleStrikeNPC((Item.damage * 5) + (int)FivePercentDamage, 0, true, 0, DamageClass.Melee, false, 0, false);
                         }
 
-                        // Register dying enemy for standing glitch ghost
                         if (!enemy.active || enemy.life <= 0 || (prevLife > 0 && enemy.life <= 0))
                         {
                             anyKilledDuringDash = true;
@@ -383,7 +382,6 @@ namespace KatanaZERO.Items.FifteensBlade
 
             katanaPlayer.IsDragonDashing = false;
 
-            // Katana Zero rule: exactly ONE single kill line along the dash vector for all enemies killed by the dash!
             if (anyKilledDuringDash && killCount > 0)
             {
                 Vector2 avgKillOrigin = killOriginSum / killCount;
@@ -397,14 +395,9 @@ namespace KatanaZERO.Items.FifteensBlade
 
             Vector2 dashEndCenter = player.Center;
 
-            // Spawn Katana Zero continuous chromatic motion blur beam (single line laser-blur connecting start and end)
             katanaPlayer.SpawnDashStreak(dashStartCenter, dashEndCenter, directionToCursor);
-
-            // Spawn dense overlapping character ghost silhouettes with lime and magenta chromatic edge blur
             katanaPlayer.SpawnGhostTrails(dashTrailPositions, directionToCursor);
 
-            // Spawn authentic Katana Zero crescent slash arc at dash destination
-            // Only hits enemies slightly outside the dash reach; enemies already struck during the dash are excluded!
             if (player.whoAmI == Main.myPlayer)
             {
                 int slashProj = Projectile.NewProjectile(
@@ -495,7 +488,6 @@ namespace KatanaZERO.Items.FifteensBlade
         public void RevertNormalSpeed(Player player) => player.GetModPlayer<KatanaPlayer>().RevertNormalSpeed();
         public void SlomoSoundEffect(Player player)
         {
-            // Maintained for backward compatibility; sound triggers are now coordinated in KatanaPlayer
         }
 
         public static SoundStyle GetRandomWeaponSound(string weaponSoundOption)

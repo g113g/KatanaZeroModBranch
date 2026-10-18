@@ -41,7 +41,6 @@ namespace KatanaZERO.Systems
 
             var katanaPlayer = player.GetModPlayer<KatanaPlayer>();
 
-            // Render overhead dash cooldown bar (Katana Zero red bar above Fifteen's head)
             if (katanaPlayer.DragonDashCooldown > 0)
             {
                 Main.spriteBatch.Begin(
@@ -59,7 +58,6 @@ namespace KatanaZERO.Systems
                 Main.spriteBatch.End();
             }
 
-            // Render continuous chromatic motion blur dash streaks (Katana Zero Dragon Dash laser smear)
             if (katanaPlayer.ActiveStreaks.Count > 0)
             {
                 Main.spriteBatch.Begin(
@@ -81,8 +79,6 @@ namespace KatanaZERO.Systems
             if (intensity <= 0.001f)
                 return;
 
-            // R2. Layer-based darkening behind NPCs and projectiles.
-            // Screen space (Matrix.Identity) ensures complete 100% viewport coverage without edge bleed.
             float darkenAlpha = intensity * 0.90f;
             int screenW = Math.Max(Main.screenWidth, Main.graphics.GraphicsDevice.Viewport.Width);
             int screenH = Math.Max(Main.screenHeight, Main.graphics.GraphicsDevice.Viewport.Height);
@@ -129,7 +125,6 @@ namespace KatanaZERO.Systems
             float radius = 464f;
             Color cyanCircle = new Color(0, 240, 255) * (intensity * 0.95f);
 
-            // 1. Draw range circle (bold circumference, 3.5f width)
             int segments = 180;
             Vector2 prevPoint = playerCenterScreen + new Vector2(radius, 0f);
             for (int i = 1; i <= segments; i++)
@@ -140,7 +135,6 @@ namespace KatanaZERO.Systems
                 prevPoint = nextPoint;
             }
 
-            // 2. Target vector towards cursor
             Vector2 cursorWorld = Main.MouseWorld;
             Vector2 toCursor = cursorWorld - player.Center;
             float dist = toCursor.Length();
@@ -156,10 +150,8 @@ namespace KatanaZERO.Systems
             Vector2 targetWorld = player.Center + toCursor * targetDist;
             Vector2 targetScreen = targetWorld - Main.screenPosition;
 
-            // 3. Single solid continuous bold cyan laser line
             DrawLine(spriteBatch, playerCenterScreen, targetScreen, cyanCircle, 3.5f);
 
-            // 4. Solid bold cyan dot at trajectory end (with soft outer glow and bright center)
             DrawSolidCircle(spriteBatch, targetScreen, 10f, cyanCircle * 0.35f);
             DrawSolidCircle(spriteBatch, targetScreen, 7f, cyanCircle);
             DrawSolidCircle(spriteBatch, targetScreen, 3.5f, Color.White * intensity);
@@ -196,13 +188,10 @@ namespace KatanaZERO.Systems
 
             float fraction = Math.Clamp(cooldown / (float)KatanaPlayer.MaxDashCooldown, 0f, 1f);
 
-            // Black outer border
             spriteBatch.Draw(WhitePixel, new Rectangle((int)barPos.X - 1, (int)barPos.Y - 1, 34, 7), Color.Black);
 
-            // Dark inner background
             spriteBatch.Draw(WhitePixel, new Rectangle((int)barPos.X, (int)barPos.Y, 32, 5), new Color(20, 20, 20));
 
-            // Katana Zero red cooldown fill (shrinks as cooldown completes)
             int fillW = (int)Math.Ceiling(32f * fraction);
             if (fillW > 0)
             {
@@ -229,10 +218,9 @@ namespace KatanaZERO.Systems
                 Vector2 perp = streak.Direction.RotatedBy(MathHelper.PiOver2);
                 if (perp.Y < 0f)
                 {
-                    perp = -perp; // Ensure -perp is always pointing upwards
+                    perp = -perp;
                 }
 
-                // 1. Top sharp lime laser boundary
                 spriteBatch.Draw(
                     WhitePixel,
                     centerScreen - perp * 19f,
@@ -245,7 +233,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 2. Upper chartreuse / lime glow band
                 spriteBatch.Draw(
                     WhitePixel,
                     centerScreen - perp * 13f,
@@ -258,7 +245,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 3. Upper-center lime-cyan gradient
                 spriteBatch.Draw(
                     WhitePixel,
                     centerScreen - perp * 6f,
@@ -271,7 +257,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 4. Center brilliant white-cyan core smear
                 spriteBatch.Draw(
                     WhitePixel,
                     centerScreen,
@@ -284,7 +269,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 5. Lower-center sharp cyan laser line (Katana Zero spr_dragon_dash_0)
                 spriteBatch.Draw(
                     WhitePixel,
                     centerScreen + perp * 4f,
@@ -308,7 +292,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 6. Lower blue-cyan glow band
                 spriteBatch.Draw(
                     WhitePixel,
                     centerScreen + perp * 12f,
@@ -321,7 +304,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 7. Bottom sharp purple laser boundary
                 spriteBatch.Draw(
                     WhitePixel,
                     centerScreen + perp * 19f,
@@ -334,7 +316,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 8. Fine GameMaker scanline motion blur texture ribs
                 int ribCount = Math.Max(1, (int)(length / 4f));
                 for (int r = 0; r <= ribCount; r++)
                 {
@@ -354,11 +335,9 @@ namespace KatanaZERO.Systems
                     );
                 }
 
-                // 9. Start launch flash burst
                 DrawSolidCircle(spriteBatch, startScreen, 18f, new Color(140, 255, 100) * (alpha * 0.5f));
                 DrawSolidCircle(spriteBatch, startScreen, 9f, Color.White * (alpha * 0.85f));
 
-                // 10. End impact flash burst
                 DrawSolidCircle(spriteBatch, endScreen, 24f, new Color(0, 245, 255) * (alpha * 0.6f));
                 DrawSolidCircle(spriteBatch, endScreen, 12f, Color.White * (alpha * 0.9f));
             }
@@ -422,6 +401,40 @@ namespace KatanaZERO.Systems
             {
                 layers.Add(batteryLayer);
             }
+
+            int logic4Index = layers.FindIndex(layer => layer.Name.Equals("Vanilla: Interface Logic 4"));
+            if (logic4Index != -1)
+            {
+                layers.Insert(logic4Index, new LegacyGameInterfaceLayer(
+                    "KatanaZERO: Before Mouse Text Draw",
+                    delegate
+                    {
+                        if (Main.HoverItem != null && !Main.HoverItem.IsAir && (Main.HoverItem.ModItem is IKatanaWeapon || Main.HoverItem.ModItem?.Mod is KatanaZERO) && KatanaZERO.enableKatanaZeroFont)
+                        {
+                            KatanaGlobalItem.OrigOpaqueSetting = Main.SettingsEnabled_OpaqueBoxBehindTooltips;
+                            KatanaGlobalItem.DrawCustomTooltipBox = Main.SettingsEnabled_OpaqueBoxBehindTooltips;
+                            Main.SettingsEnabled_OpaqueBoxBehindTooltips = false;
+                            KatanaGlobalItem.SuppressedVanillaBox = true;
+                        }
+                        return true;
+                    },
+                    InterfaceScaleType.UI
+                ));
+
+                layers.Add(new LegacyGameInterfaceLayer(
+                    "KatanaZERO: After Mouse Text Draw",
+                    delegate
+                    {
+                        if (KatanaGlobalItem.SuppressedVanillaBox)
+                        {
+                            Main.SettingsEnabled_OpaqueBoxBehindTooltips = KatanaGlobalItem.OrigOpaqueSetting;
+                            KatanaGlobalItem.SuppressedVanillaBox = false;
+                        }
+                        return true;
+                    },
+                    InterfaceScaleType.UI
+                ));
+            }
         }
 
         private static void DrawDyingEnemyGlitches(SpriteBatch spriteBatch)
@@ -458,7 +471,6 @@ namespace KatanaZERO.Systems
                 Color cyanOuter = new Color(0, 215, 255) * (alpha * 0.55f);
                 Color whiteCore = new Color(255, 240, 255) * (alpha * 0.90f);
 
-                // Blurry white-purple chromatic glitch ghost left standing while physical body falls down
                 spriteBatch.Draw(glitch.Texture, screenPos + new Vector2(-4f, 0f), glitch.SourceRect, magentaOuter, glitch.Rotation, glitch.Origin, glitch.Scale, glitch.Effects, 0f);
                 spriteBatch.Draw(glitch.Texture, screenPos + new Vector2(4f, 0f), glitch.SourceRect, magentaOuter, glitch.Rotation, glitch.Origin, glitch.Scale, glitch.Effects, 0f);
                 spriteBatch.Draw(glitch.Texture, screenPos + new Vector2(0f, -2.5f), glitch.SourceRect, cyanOuter, glitch.Rotation, glitch.Origin, glitch.Scale, glitch.Effects, 0f);
@@ -509,7 +521,6 @@ namespace KatanaZERO.Systems
                 Vector2 dir = new Vector2((float)Math.Cos(rot), (float)Math.Sin(rot));
                 Vector2 perp = new Vector2(-dir.Y, dir.X);
 
-                // Frame alternation: Even ticks cyan/white, Odd ticks magenta/purple (Katana Zero screen-cutting kill visual)
                 bool isEvenFrame = (cut.TimeLeft % 2 == 0);
                 Color outerColor = isEvenFrame ? new Color(0, 245, 255) : new Color(245, 25, 220);
                 Color coreColor = isEvenFrame ? Color.White : new Color(255, 230, 255);
@@ -517,7 +528,6 @@ namespace KatanaZERO.Systems
 
                 float lineLength = Math.Max(Main.screenWidth, Main.screenHeight) * 3f;
 
-                // 1. Broad outer atmospheric cut glow (bolder width for high visibility)
                 spriteBatch.Draw(
                     WhitePixel,
                     originScreen,
@@ -530,7 +540,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 2. Focused vibrant chromatic laser band
                 spriteBatch.Draw(
                     WhitePixel,
                     originScreen,
@@ -543,7 +552,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 3. Piercing razor-sharp central core laser beam
                 spriteBatch.Draw(
                     WhitePixel,
                     originScreen,
@@ -556,7 +564,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 4. White central razor slit
                 spriteBatch.Draw(
                     WhitePixel,
                     originScreen,
@@ -569,7 +576,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 5. Chromatic glitch fringe lines (bolder offsets and widths)
                 float glitchOffset = isEvenFrame ? 5f : -5f;
                 spriteBatch.Draw(
                     WhitePixel,
@@ -594,7 +600,6 @@ namespace KatanaZERO.Systems
                     0f
                 );
 
-                // 6. Kill impact origin flash burst
                 DrawSolidCircle(spriteBatch, originScreen, 36f * progress, outerColor * (alpha * 0.6f));
                 DrawSolidCircle(spriteBatch, originScreen, 18f * progress, Color.White * (alpha * 0.9f));
             }
@@ -618,7 +623,6 @@ namespace KatanaZERO.Systems
                 return;
 
             var katanaPlayer = player.GetModPlayer<KatanaPlayer>();
-            // Only display battery HUD when holding FifteensBlade
             if (!katanaPlayer.IsHoldingFifteen)
                 return;
 
@@ -628,8 +632,6 @@ namespace KatanaZERO.Systems
             if (batteryFrame == null || partDragon == null)
                 return;
 
-            // R3. Render authentic Katana Zero segmented battery bar
-            // Dynamically position below player buffs to avoid HUD overlap
             int buffCount = 0;
             for (int b = 0; b < player.buffType.Length; b++)
             {
@@ -641,11 +643,8 @@ namespace KatanaZERO.Systems
             Vector2 basePos = new Vector2(26f, baseY);
             float scale = 2f;
 
-            // Draw outer battery frame
             spriteBatch.Draw(batteryFrame, basePos, null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 
-            // Draw 11 battery segments centered inside 9..66 chamber (starts at X=10)
-            // Discharges discretely cell-by-cell exactly like Katana Zero
             float battery = katanaPlayer.Battery;
             Color drainedRed = new Color(255, 30, 30);
             int totalCells = 11;
@@ -658,12 +657,10 @@ namespace KatanaZERO.Systems
 
                 if (isCellCharged)
                 {
-                    // Full charged cell: authentic gold/amber with magenta borders
                     spriteBatch.Draw(partDragon, cellPos, null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
                 }
                 else
                 {
-                    // Drained cell: authentic Katana Zero bright red block
                     spriteBatch.Draw(partDragon, cellPos, null, drainedRed, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
                 }
             }

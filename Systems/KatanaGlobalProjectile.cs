@@ -34,7 +34,6 @@ namespace KatanaZERO.Systems
         {
             if (slash.TryGetGlobalProjectile<KatanaGlobalProjectile>(out var glob))
             {
-                // In Katana Zero, an attack that already struck an enemy cannot deflect projectiles
                 if (glob.HasHitAnyNPC)
                     return false;
             }
@@ -45,12 +44,9 @@ namespace KatanaZERO.Systems
         {
             if (IsKatanaSlash(projectile))
             {
-                // In Katana Zero, an attack can perform only one action:
-                // If it already hit an enemy or already deflected a projectile, it cannot strike an NPC
                 if (HasHitAnyNPC || HasDeflectedAnyProjectile)
                     return false;
 
-                // Multipart enemy check: do not hit multiple parts of the same multipart entity
                 int rootId = KatanaZERO.GetRootEntityId(target);
                 if (HitRootEntityIds.Contains(rootId) || HitRootEntityIds.Contains(target.whoAmI))
                     return false;
@@ -66,7 +62,6 @@ namespace KatanaZERO.Systems
                 int rootId = KatanaZERO.GetRootEntityId(target);
                 HitRootEntityIds.Add(rootId);
                 HitRootEntityIds.Add(target.whoAmI);
-                // Disable friendly damage so it cannot hit any other enemy or part
                 projectile.friendly = false;
             }
         }

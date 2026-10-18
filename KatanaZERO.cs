@@ -105,13 +105,11 @@ namespace KatanaZERO
             if (npc == null || !npc.active)
                 return -1;
 
-            // 1. Explicit vanilla/modded realLife link (The Destroyer, Wyverns, Calamity worms, etc.)
             if (npc.realLife >= 0 && npc.realLife < Main.maxNPCs && Main.npc[npc.realLife].active)
             {
                 return npc.realLife;
             }
 
-            // 2. Worm AI (AI Style 6) or Eater of Worlds segments: follow ai[0] link to find head
             if (npc.aiStyle == NPCAIStyleID.Worm || npc.type == NPCID.EaterofWorldsHead || npc.type == NPCID.EaterofWorldsBody || npc.type == NPCID.EaterofWorldsTail)
             {
                 int current = npc.whoAmI;
@@ -136,8 +134,6 @@ namespace KatanaZERO
                 return current;
             }
 
-            // 3. Known multipart vanilla bosses:
-            // Golem: Head (246), Fists (247, 248) -> Body (245)
             if (npc.type == NPCID.GolemHead || npc.type == NPCID.GolemFistLeft || npc.type == NPCID.GolemFistRight)
             {
                 for (int i = 0; i < Main.maxNPCs; i++)
@@ -147,7 +143,6 @@ namespace KatanaZERO
                 }
             }
 
-            // Moon Lord: Hands (397), Head (396), Free Eyes (400) -> Core (398)
             if (npc.type == NPCID.MoonLordHead || npc.type == NPCID.MoonLordHand || npc.type == NPCID.MoonLordFreeEye)
             {
                 for (int i = 0; i < Main.maxNPCs; i++)
@@ -157,7 +152,6 @@ namespace KatanaZERO
                 }
             }
 
-            // Skeletron & Skeletron Prime: hands/arms link to head via ai[1]
             if (npc.type == NPCID.SkeletronHand || npc.type == NPCID.PrimeCannon || npc.type == NPCID.PrimeSaw || npc.type == NPCID.PrimeVice || npc.type == NPCID.PrimeLaser)
             {
                 int head = (int)npc.ai[1];
@@ -165,7 +159,6 @@ namespace KatanaZERO
                     return head;
             }
 
-            // Brain of Cthulhu Creepers link via ai[0]
             if (npc.type == NPCID.Creeper)
             {
                 int brain = (int)npc.ai[0];
@@ -173,7 +166,6 @@ namespace KatanaZERO
                     return brain;
             }
 
-            // Wall of Flesh Eyes & Hungries
             if (npc.type == NPCID.WallofFleshEye || npc.type == NPCID.TheHungry || npc.type == NPCID.TheHungryII)
             {
                 for (int i = 0; i < Main.maxNPCs; i++)
@@ -208,8 +200,6 @@ namespace KatanaZERO
             {
                 if (npc.active && !npc.friendly && !npc.townNPC && !npc.isLikeATownNPC && !NPCID.Sets.CountsAsCritter[npc.type] && (npc.damage > 0 || npc.lifeMax > 5))
                 {
-                    // Throttle hostile enemy updates to 1 out of every 4 ticks (75% time dilation).
-                    // On the 3 skipped ticks, suppress AI so attack timers, Retinazer lasers, and charge accelerations are slowed down!
                     if (Main.GameUpdateCount % 4 != 0)
                     {
                         npc.velocity *= 0.25f;
@@ -225,13 +215,10 @@ namespace KatanaZERO
             float intensity = KatanaPlayer.LocalSlowMoIntensity;
             if (intensity > 0.01f && npc.active && !npc.friendly && !npc.townNPC && !npc.isLikeATownNPC && !NPCID.Sets.CountsAsCritter[npc.type] && (npc.damage > 0 || npc.lifeMax > 5))
             {
-                // Dynamic Katana Zero Chronos enemy palette
-                // Hostile enemies are perceived with fullbright illumination, completely immune to pitch-black nighttime/cave darkness.
                 Player player = Main.LocalPlayer;
                 float dist = Vector2.Distance(npc.Center, player.Center);
                 bool inDashRange = dist <= 464f;
 
-                // Calculate aim proximity if player is aiming
                 float aimProximity = 0f;
                 Vector2 toMouse = Main.MouseWorld - player.Center;
                 float mouseDist = toMouse.Length();
@@ -251,31 +238,24 @@ namespace KatanaZERO
                 Color targetBody;
                 if (inDashRange)
                 {
-                    // Alerted / targeted state (matching Katana Zero combat state):
-                    // Bright vibrant electric cyan/teal with luminous cyan-white highlights when aimed at!
                     Color baseCyan = new Color(175, 245, 255);
                     Color highlightCyan = new Color(255, 255, 255);
                     targetBody = Color.Lerp(baseCyan, highlightCyan, aimProximity * 0.75f);
                 }
                 else
                 {
-                    // Distant / unalerted state (matching Katana Zero patrol state):
-                    // Stylized vibrant Katana Zero violet/indigo
                     targetBody = new Color(215, 185, 255);
                 }
 
                 byte alpha = (byte)Math.Clamp(255 - npc.alpha, 0, 255);
                 targetBody.A = alpha;
 
-                // Full replacement at peak slowmo intensity so enemies are vividly lit at night and day alike
                 drawColor = Color.Lerp(drawColor, targetBody, intensity * 1.0f);
             }
         }
 
         public static (Texture2D texture, Vector2 drawPos, Vector2 origin, Rectangle sourceRect, SpriteEffects effects)? GetNPCDrawInfo(NPC npc, Vector2 screenPos)
         {
-            // Moon Lord's background composite parts (Head, Hand, Core) are positioned and drawn by vanilla's screen-space system.
-            // Skipping manual outline pass on Moon Lord prevents duplicate floating parts while preserving the full Katana Zero stylized indigo body via DrawEffects.
             if (npc.type == NPCID.MoonLordCore || npc.type == NPCID.MoonLordHead || npc.type == NPCID.MoonLordHand)
             {
                 return null;
@@ -368,7 +348,6 @@ namespace KatanaZERO
                     float dist = Vector2.Distance(npc.Center, player.Center);
                     bool inDashRange = dist <= 464f;
 
-                    // Dynamic Katana Zero outline: Neon Electric Cyan when alerted/in-range, Neon Violet when distant
                     Color outlineColor = inDashRange
                         ? new Color(0, 245, 255, 245) * (intensity * alphaFactor)
                         : new Color(140, 60, 255, 235) * (intensity * alphaFactor);
@@ -392,7 +371,7 @@ namespace KatanaZERO
                     }
                 }
             }
-            return true; // Allow Terraria to draw the stylized fullbright body on top of the outline
+            return true;
         }
 
         public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
@@ -410,7 +389,6 @@ namespace KatanaZERO
                     float dist = Vector2.Distance(npc.Center, player.Center);
                     bool inDashRange = dist <= 464f;
 
-                    // 1. High-intensity additive neon wash
                     Color bodyGlow = inDashRange
                         ? new Color(0, 230, 255, 0) * (intensity * alphaFactor * 0.95f)
                         : new Color(180, 100, 255, 0) * (intensity * alphaFactor * 0.90f);
@@ -427,7 +405,6 @@ namespace KatanaZERO
                         0f
                     );
 
-                    // 2. Pure additive white sheen (lifts all pitch-black pixels into luminous brightness)
                     Color whiteSheen = new Color(255, 255, 255, 0) * (intensity * alphaFactor * 0.40f);
                     spriteBatch.Draw(
                         texture,
@@ -484,7 +461,6 @@ namespace KatanaZERO
                 if (player.active)
                 {
                     var katanaPlayer = player.GetModPlayer<KatanaPlayer>();
-                    // If player is currently executing Dragon Dash, DragonDash handles the single dash kill line
                     if (katanaPlayer.IsDragonDashing)
                     {
                         LastKatanaHitAngle.Remove(npc.whoAmI);

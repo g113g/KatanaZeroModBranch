@@ -11,8 +11,8 @@ namespace KatanaZERO.Items.Claymore
 {
     public class Claymore : ModItem, Systems.IKatanaWeapon
     {
-        //Please forgive me
-        public static SoundStyle GetSlashSound(string swordName, int slashNumber)
+        //Please forgive me 
+        public static SoundStyle GetSlashSound(string swordName, int slashNumber) //Nope buddy
         {
             return new SoundStyle($"KatanaZERO/Sounds/Items/{swordName}/slash{slashNumber}");
         }

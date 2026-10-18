@@ -20,7 +20,7 @@ These weapons have unique slashing animations, can deflect bullets, and lunge yo
 * Phoenix's Edge: Slow attack speed, very high range, shoots flames that burn enemies
 (Post-Cultist)
 
-* Fifteen's Blade: High attack speed, very high reach, teleports to the cursor on holding and releasing right click, meant to kill most enemies in one hit (Legendary Weapon)
+* Fifteen's Blade: High attack speed, very high reach, slow-mo aiming powered by Chronos Battery, teleports to cursor on release slicing foes to shreds (Legendary Weapon)
 - Has 1/40000 chance to drop from any hostile enemy, or 1/9 to drop from Moon Lord.
 
 ---- Special Thanks To ----
@@ -37,7 +37,25 @@ This is a fan-made project inspired by Katana ZERO. All rights to the original I
 No profit is made from this mod. If requested, I will respectfully take it down.
 
 ---- Changelog ----
-v.1.3.1
+v1.4.0
+* Visual & Combat Overhaul for Dragon's Whisper (Fifteen's Blade):
+	- Katana ZERO character ghost trail.
+	- Dedicated Battery HUD system: drains during slow-mo aiming and recharges over time.
+	- Slow-motion aiming visual rework: darkened environment, cyan/violet enemy targeting outlines, and unmuted projectiles.
+	- Sluggish inertial drift during slow-mo aiming.
+	- Screen-cutting slash line effect and chromatic glitch silhouettes on dying enemies.
+* Bullet Deflection Rework:
+	- Deflection animation (spr_bulletreflect) and audio sync across all swords.
+	- Deflection immediately resets attack cooldown for fluid counter-attacks.
+	- Strict action gating (one action per swing: hit or deflect).
+* Fixes & Balancing:
+	- Multi-hit fix for multi-part enemies (Worms, Golem, Moon Lord); each enemy root entity damaged once per attack.
+	- Fixed Dragon Dash cooldown bypass exploit when swapping weapons.
+* Authentic Typography:
+	- Katana ZERO font (VCR OSD Mono) for weapon names and tooltips in EN, RU, and IT.
+	- Config option to toggle custom font.
+
+v1.3.1
 * Fixed recipe for Zero's Katana not having Tungsten in its recipe group.
 
 v1.3.0

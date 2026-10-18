@@ -55,13 +55,12 @@ namespace KatanaZERO.Systems
 
     public class KatanaPlayer : ModPlayer
     {
-        // Standalone Chronos Battery pool (11 segments, 10 units each = 110 max)
         public const float MaxBattery = 110f;
-        public const float DashBatteryCost = 0f; // Dash does NOT cost battery in Katana Zero
-        public const float SlowMoDrainPerTick = 0.26f; // ~7.05 seconds of continuous slow-mo
-        public const float BatteryRechargePerTick = 0.60f; // ~3 seconds to recharge full from empty
+        public const float DashBatteryCost = 0f;
+        public const float SlowMoDrainPerTick = 0.26f;
+        public const float BatteryRechargePerTick = 0.60f;
 
-        public const int MaxDashCooldown = 180; // 3 seconds at 60fps
+        public const int MaxDashCooldown = 180;
         public int DragonDashCooldown = 0;
 
         public float Battery = MaxBattery;
@@ -73,27 +72,20 @@ namespace KatanaZERO.Systems
         public bool IsDragonDashing = false;
         public float SlowMoVisualIntensity = 0f;
 
-        // Dictionaries for tracking slowed mob and projectile speeds
         public Dictionary<int, float> OriginalNPCSpeeds = new Dictionary<int, float>();
         public Dictionary<int, float> OriginalProjectileSpeeds = new Dictionary<int, float>();
 
-        // Active ghost silhouettes along dash trajectory
         public List<GhostSilhouette> ActiveGhosts = new List<GhostSilhouette>();
 
-        // Active continuous chromatic motion blur dash streaks
         public List<DashStreak> ActiveStreaks = new List<DashStreak>();
 
-        // Active full-screen kill slash cut lines
         public List<ScreenCutLine> ActiveScreenCuts = new List<ScreenCutLine>();
 
-        // Active slow-mo movement ghosts (5-10 short trailing ghosts when moving in slowmo)
         public List<SlowMoGhost> ActiveSlowMoGhosts = new List<SlowMoGhost>();
         private int slowMoGhostSpawnTimer = 0;
 
-        // Active dying enemy glitch ghosts left at standing position on dash kill
         public List<DyingEnemyGlitch> ActiveDyingEnemyGlitches = new List<DyingEnemyGlitch>();
 
-        // Cached snapshot of player DrawData
         public List<DrawData> CapturedPlayerDrawData = new List<DrawData>();
         public Vector2 CapturedPlayerPosition = Vector2.Zero;
         public Vector2 CapturedScreenPosition = Vector2.Zero;
@@ -114,7 +106,6 @@ namespace KatanaZERO.Systems
 
         public void ConsumeDashBattery()
         {
-            // Dash does not consume battery in Katana Zero
         }
 
         public void StartSlowMo()
@@ -188,7 +179,6 @@ namespace KatanaZERO.Systems
             int count = positions.Count;
             for (int i = 0; i < count; i++)
             {
-                // Exactly 5 frames lifetime (fades smoothly in frames 4, 3, 2, 1)
                 int life = 5;
 
                 ActiveGhosts.Add(new GhostSilhouette
@@ -209,7 +199,7 @@ namespace KatanaZERO.Systems
         {
             float dist = Vector2.Distance(startCenter, endCenter);
             float rot = direction.ToRotation();
-            int life = 6; // Exactly 5-6 frames lifetime matching Katana Zero
+            int life = 6;
             ActiveStreaks.Add(new DashStreak
             {
                 StartCenter = startCenter,
@@ -247,7 +237,7 @@ namespace KatanaZERO.Systems
                 return;
 
             var (texture, _, origin, sourceRect, effects) = drawInfo.Value;
-            int life = 26; // ~0.43s lingering white-purple glitch ghost while body falls
+            int life = 26;
             ActiveDyingEnemyGlitches.Add(new DyingEnemyGlitch
             {
                 Texture = texture,
@@ -414,19 +404,15 @@ namespace KatanaZERO.Systems
 
         public override void PreUpdateMovement()
         {
-            // Low-gravity sluggish inertial drift during Chronos time-slow
             if (IsSlowingTime)
             {
-                // Slow down ground movement to ~50%
                 Player.maxRunSpeed *= 0.5f;
                 Player.accRunSpeed *= 0.5f;
 
-                // Low-gravity floatiness in air (~50% speed with momentum, noticeably faster than 75%-slowed enemies)
                 Player.gravity *= 0.15f;
                 Player.maxFallSpeed *= 0.35f;
-                Player.fallStart = (int)(Player.position.Y / 16f); // Prevent fall damage accumulation
+                Player.fallStart = (int)(Player.position.Y / 16f);
 
-                // Smooth inertial drift while floating in air
                 if (Player.velocity.Y > 1.5f)
                 {
                     Player.velocity.Y = MathHelper.Lerp(Player.velocity.Y, 1.2f, 0.08f);
@@ -444,13 +430,11 @@ namespace KatanaZERO.Systems
 
         public override void PostUpdate()
         {
-            // If player switched away from weapon, or died, or battery is 0, exit slowmo safely
             if (IsSlowingTime && (!IsHoldingFifteen || Player.dead || Battery <= 0f))
             {
                 EndSlowMo();
             }
 
-            // Smooth visual intensity transition (0.0 <-> 1.0)
             float targetIntensity = IsSlowingTime ? 1f : 0f;
             SlowMoVisualIntensity = MathHelper.Lerp(SlowMoVisualIntensity, targetIntensity, 0.20f);
             if (Math.Abs(SlowMoVisualIntensity - targetIntensity) < 0.01f)
@@ -458,7 +442,6 @@ namespace KatanaZERO.Systems
                 SlowMoVisualIntensity = targetIntensity;
             }
 
-            // Battery drain and auto-recharge logic
             if (IsSlowingTime)
             {
                 Battery = Math.Max(0f, Battery - SlowMoDrainPerTick);
@@ -486,7 +469,6 @@ namespace KatanaZERO.Systems
                 DragonDashCooldown--;
             }
 
-            // 5-10 short ghosts trailing close behind Fifteen while moving in slow-mo
             if (IsSlowingTime && Player.velocity.LengthSquared() > 0.10f)
             {
                 if (++slowMoGhostSpawnTimer >= 2)
@@ -494,7 +476,7 @@ namespace KatanaZERO.Systems
                     slowMoGhostSpawnTimer = 0;
                     if (CapturedPlayerDrawData != null && CapturedPlayerDrawData.Count > 0)
                     {
-                        int ghostLife = 9; // Fades fast over 9 ticks (~0.15s)
+                        int ghostLife = 9;
                         ActiveSlowMoGhosts.Add(new SlowMoGhost
                         {
                             WorldPosition = Player.position,
@@ -518,7 +500,6 @@ namespace KatanaZERO.Systems
                 slowMoGhostSpawnTimer = 0;
             }
 
-            // Update active slow-mo trailing ghosts
             for (int i = ActiveSlowMoGhosts.Count - 1; i >= 0; i--)
             {
                 ActiveSlowMoGhosts[i].TimeLeft--;
@@ -528,7 +509,6 @@ namespace KatanaZERO.Systems
                 }
             }
 
-            // Update ghost silhouettes along dash path
             for (int i = ActiveGhosts.Count - 1; i >= 0; i--)
             {
                 ActiveGhosts[i].TimeLeft--;
@@ -538,7 +518,6 @@ namespace KatanaZERO.Systems
                 }
             }
 
-            // Update active dash streaks
             for (int i = ActiveStreaks.Count - 1; i >= 0; i--)
             {
                 ActiveStreaks[i].TimeLeft--;
@@ -548,7 +527,6 @@ namespace KatanaZERO.Systems
                 }
             }
 
-            // Update active screen cut lines
             for (int i = ActiveScreenCuts.Count - 1; i >= 0; i--)
             {
                 ActiveScreenCuts[i].TimeLeft--;
@@ -558,7 +536,6 @@ namespace KatanaZERO.Systems
                 }
             }
 
-            // Update active dying enemy glitches
             for (int i = ActiveDyingEnemyGlitches.Count - 1; i >= 0; i--)
             {
                 ActiveDyingEnemyGlitches[i].TimeLeft--;
@@ -571,7 +548,6 @@ namespace KatanaZERO.Systems
 
         public override void DrawEffects(PlayerDrawSet drawInfo, ref float r, ref float g, ref float b, ref float a, ref bool fullBright)
         {
-            // Fifteen turns electric blue when in slow-mo
             if (SlowMoVisualIntensity > 0.01f)
             {
                 float t = SlowMoVisualIntensity;

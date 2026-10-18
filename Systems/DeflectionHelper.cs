@@ -25,10 +25,8 @@ namespace KatanaZERO.Systems
                 glob.HasDeflectedAnyProjectile = true;
             }
 
-            // In Katana Zero, deflecting consumes the swing's attack capability against enemies
             slash.friendly = false;
 
-            // Deflection immediately resets attack animation and weapon cooldown, allowing instant parry spamming
             Player player = Main.player[slash.owner];
             player.itemAnimation = 0;
             player.itemTime = 0;
@@ -62,14 +60,10 @@ namespace KatanaZERO.Systems
                 NetMessage.SendData(Terraria.ID.MessageID.SyncProjectile, -1, -1, null, bullet.whoAmI);
             }
 
-            // Find exact contact point between slash and incoming projectile
             Rectangle intersect = Rectangle.Intersect(slash.getRect(), bullet.getRect());
             Vector2 contactPoint = intersect.IsEmpty ? bullet.Center : intersect.Center.ToVector2();
-
-            // Parry angle: direction bullet is deflected towards
             float parryAngle = bullet.velocity.ToRotation();
 
-            // Spawn dedicated 5-frame spr_bulletreflect animation projectile
             int proj = Projectile.NewProjectile(
                 slash.GetSource_FromThis(),
                 contactPoint,
@@ -86,7 +80,6 @@ namespace KatanaZERO.Systems
                 Main.projectile[proj].rotation = parryAngle;
             }
 
-            // Audio sync with Katana Zero's deflection sound
             SoundEngine.PlaySound(DeflectSound, contactPoint);
             return true;
         }

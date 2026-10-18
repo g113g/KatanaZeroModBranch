@@ -1,5 +1,23 @@
 ---- Changelog ----
-v.1.3.1 - 29.7.2025
+v1.4.0 - 19.10.2026
+* Visual & Combat Overhaul for Dragon's Whisper (Fifteen's Blade):
+	- Katana ZERO player character ghost trail during Dragon Dash.
+	- Dedicated Battery HUD system: Slow-mo deceleration now drains a segmented battery bar instead of player mana, recharging automatically over time.
+	- Slow-motion aiming visual rework: Environment tiles darken towards black, hostile targets highlight in vibrant cyan with glowing outlines, and projectiles stay fully illuminated.
+	- Movement during slow-mo aiming changed from hard freeze to sluggish inertial drift.
+	- Added screen-cutting slash line effect and chromatic glitch silhouettes on dying enemies.
+* Bullet Deflection Rework:
+	- Added 5-frame deflection animation (spr_bulletreflect or simply spark) and sound effect across all swords.
+	- Deflecting a projectile immediately resets weapon attack cooldown, allowing instant counter-attacks.
+	- Fixed action gating so a single swing performs one action (hit or deflect).
+* Fixes & Balancing:
+	- Fixed multi-hit bug on segmented/multi-part enemies (Worms, Golem, Moon Lord); each enemy root entity now takes damage only once per attack/dash.
+	- Fixed dash cooldown exploit that allowed bypassing the 3-second weapon cooldown by swapping swords in inventory.
+* Authentic Typography:
+	- Added Katana ZERO font (VCR OSD Mono) for weapon names and tooltips, supporting English, Russian (Cyrillic), and Italian.
+	- Added configuration toggle to enable/disable the custom font.
+
+v1.3.1 - 29.7.2025
 * Fixed recipe for Zero's Katana not having Tungsten in its recipe group.
 
 v1.3.0 - 22.7.2025 - It's been one hell of a year.
