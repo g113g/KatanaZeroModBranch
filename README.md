@@ -46,15 +46,22 @@ P.S. I hate that only sensible idea for Multiplayer will be toggle turning off a
 
 # Changelog
 ## **v1.4.0**
-**Bug Fixes**
-- 🛠️ Fixed multihit for complex enemies (worms, golem, enemies with parts) by **Dragon Dash character**.
-- 🛠️ All Swords can hit only one enemy per hit like in original game, same for deflection, with exceptions like Claymore and Dragon Dash.
-**Changes**
-- 🔧 Now **Dragon Dash when using Dragon's Whisper** looks fancy, have limit to Chronos slow motion via battery UI.
-- 🔧 Deflection resets standart attack cooldown like in original game.
-- 🔧 Character now can move in slow-mo state.
-- 🔧 Added effects. Deflection spark, Kill effects, Dragon Dash effect, slow-mo trail while charecter moves.
-- 🔧 Added visual red line cooldown for Dragon Dash and attacks from original game.
+**Visual & Combat Overhaul for Dragon's Whisper (Fifteen's Blade):**
+- 🔧 Katana ZERO player character ghost trail during Dragon Dash.
+- 🔧 Dedicated Battery HUD system: Slow-mo deceleration now drains a segmented battery bar instead of player mana, recharging automatically over time.
+- 🔧 Slow-motion aiming visual rework: Environment tiles darken towards black, hostile targets highlight in vibrant cyan with glowing outlines, and projectiles stay fully illuminated.
+- 🔧 Movement during slow-mo aiming changed from hard freeze to sluggish inertial drift.
+- 🔧 Added screen-cutting slash line effect and chromatic glitch silhouettes on dying enemies.
+**Bullet Deflection Rework:**
+- 🔧 Added 5-frame deflection animation (spr_bulletreflect or simply spark) and sound effect across all swords.
+- 🔧 Deflecting a projectile immediately resets weapon attack cooldown, allowing instant counter-attacks.
+- 🔧 Fixed action gating so a single swing performs one action (hit or deflect).
+**Fixes & Balancing:**
+- 🛠️ Fixed multi-hit bug on segmented/multi-part enemies (Worms, Golem, Moon Lord); each enemy root entity now takes damage only once per attack/dash.
+- 🛠️ Fixed dash cooldown exploit that allowed bypassing the 3-second weapon cooldown by swapping swords in inventory.
+**Typography:**
+- 🌎 Added Katana ZERO font (VCR OSD Mono) for weapon names and tooltips, supporting English, Russian (Cyrillic), and Italian.
+- 🌎 Added configuration toggle to enable/disable the custom font.
 
 
 ## **v1.3.0**
